@@ -1,7 +1,7 @@
 version: "2"
 services:
   sen2r:
-    build: .
+    image: noerw/sentinel_fire:latest
     volumes:
       - ./data:/app/data
 
