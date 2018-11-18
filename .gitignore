@@ -2,3 +2,4 @@
 .Rhistory
 data/
 scihub.credentials
+.DS_Store

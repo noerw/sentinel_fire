@@ -1,0 +1,71 @@
+library(sp)
+library(raster)
+
+#here your direction
+setwd("")
+
+#_________________________________________________________________________________________________________________________________________________________________________________
+#|| bevor fire ||
+
+# add different bands 
+B01 <- raster('./S2A_MSIL2A_20180806T104021_N0208_R008_T32ULD_20180806T142805.SAFE/R20m/T32ULD_20180806T104021_TCI_20m.jp2')
+B02 <- raster('./S2A_MSIL2A_20180806T104021_N0208_R008_T32ULD_20180806T142805.SAFE/R20m/T32ULD_20180806T104021_B02_20m.jp2 ')
+B03 <- raster('./S2A_MSIL2A_20180806T104021_N0208_R008_T32ULD_20180806T142805.SAFE/R20m/T32ULD_20180806T104021_B03_20m.jp2 ')
+B04 <- raster('./S2A_MSIL2A_20180806T104021_N0208_R008_T32ULD_20180806T142805.SAFE/R20m/T32ULD_20180806T104021_B05_20m.jp2')
+B06 <- raster('./S2A_MSIL2A_20180806T104021_N0208_R008_T32ULD_20180806T142805.SAFE/R20m/T32ULD_20180806T104021_B06_20m.jp2 ')
+B07 <- raster('./S2A_MSIL2A_20180806T104021_N0208_R008_T32ULD_20180806T142805.SAFE/R20m/T32ULD_20180806T104021_B07_20m.jp2 ')
+B8A <- raster('./S2A_MSIL2A_20180806T104021_N0208_R008_T32ULD_20180806T142805.SAFE/R20m/T32ULD_20180806T104021_B8A_20m.jp2')
+B11 <- raster('./S2A_MSIL2A_20180806T104021_N0208_R008_T32ULD_20180806T142805.SAFE/R20m/T32ULD_20180806T104021_B11_20m.jp2 ')
+B12 <- raster('./S2A_MSIL2A_20180806T104021_N0208_R008_T32ULD_20180806T142805.SAFE/R20m/T32ULD_20180806T104021_B12_20m.jp2 ')
+
+
+#Water Pixels (WP)
+WP <--   ((B8A+B11+B12)-(B01+B02+B03)) / ((B8A+B11+B12)+(B01+B02+B03))
+plot(WP)
+title(main = "WP")
+
+#file:///Users/albert/Downloads/proceedings-02-00364-v3.pdf
+#Burned Area Index for Sentinel-2 (BAIS2)
+BAIS2 <- (1- sqrt((B06*B07*B8A)/B04) * ( (B12-B8A) / (sqrt(B12+B8A) ) +1) )
+
+plot(BAIS2)
+title(main = "BAIS2")
+#_________________________________________________________________________________________________________________________________________________________________________________
+#|| after the fire ||
+
+# add different bands 
+AB01 <- raster('./S2B_MSIL2A_20180930T104019_N0208_R008_T32ULD_20180930T165224.SAFE/R20m/T32ULD_20180930T104019_TCI_20m.jp2')
+AB02 <- raster('./S2B_MSIL2A_20180930T104019_N0208_R008_T32ULD_20180930T165224.SAFE/R20m/T32ULD_20180930T104019_B02_20m.jp2 ')
+AB03 <- raster('./S2B_MSIL2A_20180930T104019_N0208_R008_T32ULD_20180930T165224.SAFE/R20m/T32ULD_20180930T104019_B03_20m.jp2')
+AB04 <- raster('./S2B_MSIL2A_20180930T104019_N0208_R008_T32ULD_20180930T165224.SAFE/R20m/T32ULD_20180930T104019_B04_20m.jp2')
+AB06 <- raster('./S2B_MSIL2A_20180930T104019_N0208_R008_T32ULD_20180930T165224.SAFE/R20m/T32ULD_20180930T104019_B06_20m.jp2 ')
+AB07 <- raster('./S2B_MSIL2A_20180930T104019_N0208_R008_T32ULD_20180930T165224.SAFE/R20m/T32ULD_20180930T104019_B07_20m.jp2')
+AB8A <- raster('./S2B_MSIL2A_20180930T104019_N0208_R008_T32ULD_20180930T165224.SAFE/R20m/T32ULD_20180930T104019_B8A_20m.jp2')
+AB11 <- raster('./S2B_MSIL2A_20180930T104019_N0208_R008_T32ULD_20180930T165224.SAFE/R20m/T32ULD_20180930T104019_B11_20m.jp2')
+AB12 <- raster('./S2B_MSIL2A_20180930T104019_N0208_R008_T32ULD_20180930T165224.SAFE/R20m/T32ULD_20180930T104019_B12_20m.jp2')
+
+
+#Water Pixels (WP)
+AWP <--   ((AB8A+AB11+AB12)-(AB01+AB02+AB03)) / ((AB8A+AB11+AB12)+(AB01+AB02+AB03))
+plot(AWP)
+title(main = "AWP")
+
+
+#Burned Area Index for Sentinel-2 (BAIS2)
+ABAIS2 <- (1- sqrt((AB06*AB07*AB8A)/AB04) * ( (AB12-AB8A) / (sqrt(AB12+AB8A) ) +1) ) / 2
+
+#set colors
+colors <- c("red", "#40FF00", "#F3F781")
+
+#find out the breaks
+summary(ABAIS2)
+
+
+plot(ABAIS2,col=colors, breaks = c(-21421.491, -4215.156,80625.917),main="Burned Area Index for Sentinel-2")
+
+plot(ABAIS2)
+title(main = "Burned Area Index for Sentinel-2")
+
+
+#_________________________________________________________________________________________________________________________________________________________________________________
+
