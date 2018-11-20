@@ -1,8 +1,8 @@
 FROM r-base
 
 RUN apt-get update && \
-    apt-get install -y libssl-dev libcurl3-dev libgdal-dev libgeos-dev libproj-dev libudunits2-dev liblwgeom-dev \
-    libcairo2-dev libjq-dev libprotobuf-dev protobuf-compiler libv8-dev aria2 libnetcdf-dev
+    apt-get install -y libssl-dev libcurl4-openssl-dev libgdal-dev libgeos-dev libproj-dev libudunits2-dev liblwgeom-dev \
+    libcairo2-dev libjq-dev libv8-dev libnetcdf-dev libprotobuf-dev protobuf-compiler aria2 python3
 
 RUN apt-get clean && apt-get autoremove -y
 
@@ -12,7 +12,7 @@ RUN Rscript -e 'install.packages("devtools")'
 RUN Rscript -e 'devtools::install_version("rgeos", version = "0.3-28")'
 
 RUN Rscript -e 'install.packages("sf")'
-RUN Rscript -e 'devtools::install_github("ranghetti/sen2r", upgrade = "never")'
+RUN Rscript -e 'devtools::install_github("ranghetti/sen2r")'
 
 RUN Rscript -e 'sen2r::install_sen2cor()'
 
