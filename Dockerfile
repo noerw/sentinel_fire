@@ -13,6 +13,7 @@ RUN wget http://step.esa.int/thirdparties/sen2cor/2.5.5/Sen2Cor-02.05.05-Linux64
     rm -f ./Sen2Cor-02.05.05-Linux64.run
 
 # install Python dependencies
+COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
 # install R dependencies
