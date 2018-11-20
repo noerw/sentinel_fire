@@ -1,0 +1,41 @@
+#!/usr/bin/env python2
+
+import logging
+import os
+import argparse
+
+from sentinelsat.sentinel import SentinelAPI
+
+# log to stderr. stdout is used for pipe communications!
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+
+# argparse
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('outdir', type = str, help = 'directory to store the results in')
+parser.add_argument('productid', type = str, help = 'UUID of the product to download')
+parser.add_argument('--unzip', help = 'Whether to unzip the downloaded product', default = True)
+parser.add_argument('--user', help = 'Copernicus Apihub username', default = 'user')
+parser.add_argument('--password', help = 'Copernicus Apihub password', default = 'user')
+args = parser.parse_args()
+
+api = SentinelAPI(
+    os.environ.get('S2_USER') or args.user,
+    os.environ.get('S2_PASS') or args.password,
+)
+
+product = api.download(args.productid, args.outdir)
+
+# print the resulting zip or directory for piping
+zip_path = product['path']
+if args.unzip:
+    import zipfile
+    zip_ref = zipfile.ZipFile(zip_path, 'r')
+    zip_ref.extractall(args.outdir)
+    zip_ref.close()
+    os.remove(zip_path)
+    print zip_path[:-4] # remove .zip extension to get folder path
+else:
+    print zip_path

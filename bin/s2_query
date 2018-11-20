@@ -1,0 +1,83 @@
+#!/usr/bin/env python2
+
+import logging
+import os
+import sys
+import argparse
+import re
+import itertools
+
+import geojson
+from sentinelsat.sentinel import SentinelAPI, geojson_to_wkt
+
+# log to stderr. stdout is used for pipe communications!
+logger = logging.getLogger()
+logger.setLevel(logging.WARN)
+logger.addHandler(logging.StreamHandler())
+
+# argparse
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--aoi", help="GeoJSON polygon of the required area", required = True)
+parser.add_argument("--startdate", help="YYYYMMDD", default='NOW-7DAYS')
+parser.add_argument("--enddate", help="YYYYMMDD", default='NOW')
+parser.add_argument("--cloud", help="maximum cloud cover percentage", default=100)
+parser.add_argument("--user", help="Copernicus Apihub username", default='user')
+parser.add_argument("--password", help="Copernicus Apihub password", default='user')
+args = parser.parse_args()
+
+api = SentinelAPI(
+    os.environ.get('S2_USER') or args.user,
+    os.environ.get('S2_PASS') or args.password,
+)
+
+aoi = geojson_to_wkt(geojson.loads(args.aoi))
+
+# query L2A AND L1C
+l2a_products = api.query(
+    aoi,
+    (args.startdate, args.enddate),
+    cloudcoverpercentage=(0, args.cloud),
+    producttype = 'S2MSI2A',
+).values()
+
+l1c_products = api.query(
+    aoi,
+    (args.startdate, args.enddate),
+    cloudcoverpercentage=(0, args.cloud),
+    producttype = 'S2MSI1C',
+).values()
+
+# replace L1C products with L2A where avilable
+
+s2_compactname_regex = re.compile('^S2[AB]\_MSIL[12][AC]\_([0-9]{8}T[0-9]{6})\_N[0-9]{4}\_R([0-9]{3})\_T([A-Z0-9]{5})\_[0-9]{8}T[0-9]{6}\.SAFE$')
+s2_oldname_regex = re.compile('^S2[AB]\_[A-Z]{4}\_(PRD)\_MSIL[12][AC]\_.{4}\_[0-9]{8}T[0-9]{6}\_R([0-9]{3})\_V[0-9]{8}T[0-9]{6}\_([0-9]{8}T[0-9]{6})\.SAFE$')
+
+def productsToOrbitTileId(products):
+    '''
+    compile a unique ID per orbit / day and tile
+    '''
+    l2a_scihub_oldnames_match = [s2_oldname_regex.match(p) for p in products]
+    l2a_scihub_compactnames_match = [s2_compactname_regex.match(p) for p in products]
+
+    l2a_scihub_oldnames_tuples = [f.group(3,2,1) for f in l2a_scihub_oldnames_match if f is not None]
+    l2a_scihub_compactnames_tuples = [f.group(1,2,3) for f in l2a_scihub_compactnames_match if f is not None]
+    matchtuples = l2a_scihub_compactnames_tuples + l2a_scihub_oldnames_tuples
+
+    return ['_'.join(f) for f in matchtuples]
+
+l2a_tiles = productsToOrbitTileId([p['filename'] for p in l2a_products])
+l1c_tiles = productsToOrbitTileId([p['filename'] for p in l1c_products])
+
+# only keep l1c entries, which were not found in l2a_tiles
+l1c_needed_which = [g not in l2a_tiles for g in l1c_tiles]
+l1c_needed = list(itertools.compress(l1c_products, l1c_needed_which))
+
+products = l1c_needed + l2a_products
+productDict = {i: p for i, p in enumerate(products)}
+
+logger.warn('%s scenes found with a total size of %.2f GB', len(productDict), api.get_products_size(productDict))
+
+# print the product IDs row by row for piping
+for p in products:
+    print p['uuid']
