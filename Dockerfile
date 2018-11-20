@@ -3,7 +3,7 @@ FROM r-base
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y python2 gdal && \
+    apt-get install -y python2 gdal-bin && \
     apt-get clean && apt-get autoremove -y
 
 # install Sen2Cor
