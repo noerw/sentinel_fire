@@ -1,0 +1,60 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+
+# download & preprocess Sentinel2 imagery
+# usage:
+# s2_preprocessed '{"type":"Polygon","coordinates":[[[1,1], [2,3], [3,4]]]}' 20181001 20181015 20 usern passw
+
+aoi=$1
+startdate=${2:-'NOW-5DAYS'}
+enddate=${3:-'NOW'}
+cloud=${4:-'20'}
+export S2_USER=${4:-'user'}
+export S2_PASS=${5:-'user'}
+outdir=${6:-"$PWD"}
+
+
+function parallelism {
+  # checks the available memory, and returns the number of instances that can be
+  # launched in parallel for a given amount of required RAM (maximum: no. cpu cores)
+  mb_required=$1
+  mem_instances=`awk '/MemAvailable/ { print int($2 / 1024 / '$mb_required') }' /proc/meminfo`
+  cpu_instances=`< /proc/cpuinfo awk '/cpu cores/ { print $4 }' | uniq`
+  echo -e "$cpu_instances\n$mem_instances" | sort | head -n1 # minimum of cores & ram
+}
+
+SCRIPTDIR=${BASH_SOURCE%/*}
+sen2cor_bin='/sen2cor/bin/L2A_Process'
+sen2cor_res=60m
+
+sen2cor_instances=`parallelism 7000`
+
+if [ "$sen2cor_instances" -eq "0" ]; then
+   echo "not enough memory to do sen2cor preprocessing!";
+   exit 1;
+fi
+
+# using bash pipes and xargs gives us smart parallelism, all without Apache Storm, Spark,
+# Hadoop or whatever! (who needs replayability, just start the pipe again, completed work is cached)
+
+$SCRIPTDIR/s2_query --aoi "$aoi" --startdate "$startdate" --enddate "$enddate" --cloud "$cloud" |
+
+  # download two in parallel (API limitation)
+  xargs -L1 -P2 $SCRIPTDIR/s2_download $outdir |
+
+  # filter L1C tiles to apply correction to:
+  grep 'MSIL1C' | # only L1C products need to be processed. TODO: also skip for already existing L2A
+
+  xargs -L1 -P$sen2cor_instances $sen2cor_bin --resolution $sen2cor_res
+
+# wait for all previous steps to complete, as we need /all/ images for merging
+
+# start second pipeline
+
+# xargs -L1 -P4 $SCRIPTDIR/s2_gdal |
+#   xargs $SCRIPTDIR/s2_group_orbits
+#   xargs $SCRIPTDIR/s2_merge
+
