@@ -3,6 +3,7 @@
 import logging
 import os
 import argparse
+import zipfile
 
 from sentinelsat.sentinel import SentinelAPI
 
@@ -16,7 +17,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('outdir', type = str, help = 'directory to store the results in')
 parser.add_argument('productid', type = str, help = 'UUID of the product to download')
-parser.add_argument('--unzip', help = 'Whether to unzip the downloaded product', default = True)
+parser.add_argument('--rmzip', help = 'Whether to delete the zip source file. If true, already downloaded files will be downloaded again.', default = False)
 parser.add_argument('--user', help = 'Copernicus Apihub username', default = 'user')
 parser.add_argument('--password', help = 'Copernicus Apihub password', default = 'user')
 args = parser.parse_args()
@@ -30,12 +31,10 @@ product = api.download(args.productid, args.outdir)
 
 # print the resulting zip or directory for piping
 zip_path = product['path']
-if args.unzip:
-    import zipfile
-    zip_ref = zipfile.ZipFile(zip_path, 'r')
-    zip_ref.extractall(args.outdir)
-    zip_ref.close()
+zip_ref = zipfile.ZipFile(zip_path, 'r')
+zip_ref.extractall(args.outdir)
+zip_ref.close()
+if args.rmzip:
     os.remove(zip_path)
-    print zip_path[:-4] # remove .zip extension to get folder path
-else:
-    print zip_path
+# resulting product directory: replace .zip with .SAFE extension
+print zip_path[:-4] + '.SAFE'

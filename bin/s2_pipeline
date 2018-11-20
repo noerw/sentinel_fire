@@ -12,9 +12,9 @@ aoi=$1
 startdate=${2:-'NOW-5DAYS'}
 enddate=${3:-'NOW'}
 cloud=${4:-'20'}
-export S2_USER=${4:-'user'}
-export S2_PASS=${5:-'user'}
-outdir=${6:-"$PWD"}
+export S2_USER=${5:-'user'}
+export S2_PASS=${6:-'user'}
+outdir=${7:-"$PWD"}
 
 
 function parallelism {
@@ -27,8 +27,8 @@ function parallelism {
 }
 
 SCRIPTDIR=${BASH_SOURCE%/*}
-sen2cor_bin='/sen2cor/bin/L2A_Process'
-sen2cor_res=60m
+sen2cor_bin="$SCRIPTDIR/bin/sen2cor/bin/L2A_Process"
+sen2cor_res=20
 
 sen2cor_instances=`parallelism 7000`
 
@@ -51,6 +51,9 @@ $SCRIPTDIR/s2_query --aoi "$aoi" --startdate "$startdate" --enddate "$enddate" -
   xargs -L1 -P$sen2cor_instances $sen2cor_bin --resolution $sen2cor_res
 
 # wait for all previous steps to complete, as we need /all/ images for merging
+
+# remove L1C files
+# rm $outdir/*MSIL1C*
 
 # start second pipeline
 

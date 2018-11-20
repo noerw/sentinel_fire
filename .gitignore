@@ -3,3 +3,5 @@
 data/
 scihub.credentials
 .DS_Store
+*.pyc
+bin/sen2cor
