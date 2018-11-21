@@ -1,23 +1,26 @@
 FROM r-base
 
-RUN apt-get update && \
-    apt-get install -y libssl-dev libcurl4-openssl-dev libgdal-dev libgeos-dev libproj-dev libudunits2-dev liblwgeom-dev \
-    libcairo2-dev libjq-dev libv8-dev libnetcdf-dev libprotobuf-dev protobuf-compiler aria2 python3
+WORKDIR /app
 
-RUN apt-get clean && apt-get autoremove -y
+RUN apt-get update && \
+    apt-get install -y python2 python-pip gdal-bin file musl-dev && \
+    apt-get clean && apt-get autoremove -y
+
+# install Sen2Cor
+RUN wget http://step.esa.int/thirdparties/sen2cor/2.5.5/Sen2Cor-02.05.05-Linux64.run && \
+    mkdir bin && /bin/bash ./Sen2Cor-02.05.05-Linux64.run --quiet --nox11 --target bin/sen2cor && \
+    rm -f ./Sen2Cor-02.05.05-Linux64.run
+
+# install Python dependencies
+COPY requirements.txt ./
+RUN pip install -r requirements.txt
 
 # install R dependencies
-RUN Rscript -e 'install.packages("devtools")'
-# https://stackoverflow.com/a/52992040
-RUN Rscript -e 'devtools::install_version("rgeos", version = "0.3-28")'
+# RUN Rscript -e 'install.packages("raster")'
 
-RUN Rscript -e 'install.packages("sf")'
-RUN Rscript -e 'devtools::install_github("ranghetti/sen2r")'
-
-RUN Rscript -e 'sen2r::install_sen2cor()'
-
-# install script
-WORKDIR /app
+# install our code
 COPY . .
 
-CMD ["Rscript", "meppen_crop.R"]
+ENV PATH="/app/bin:/app/sen2cor/bin:${PATH}"
+
+CMD ["bin/s2_pipeline"]
