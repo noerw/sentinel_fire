@@ -27,7 +27,7 @@ function parallelism {
 }
 
 SCRIPTDIR=${BASH_SOURCE%/*}
-sen2cor_bin="$SCRIPTDIR/bin/sen2cor/bin/L2A_Process"
+sen2cor_bin="$SCRIPTDIR/sen2cor/bin/L2A_Process"
 sen2cor_res=20
 
 sen2cor_instances=`parallelism 7000`
