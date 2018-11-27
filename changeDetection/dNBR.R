@@ -15,7 +15,6 @@ library(maptools)
 library(mapview)
 library(RColorBrewer)
 
-
 # ------------------------ Loading Bands ------------------------ 
 
 setwd("D:/Uni/Master/Monitoring")
@@ -54,36 +53,41 @@ After_NBR <- (After_NIR - After_SWIR) / (After_NIR + After_SWIR)
 dNBR <- Before_NBR - After_NBR
 
 #reclassify with the classes from the paper
-classified_dNBR <- reclassify(dNBR, c(-2,-0.1,0.1,0.27,0.66,2))
+Burn_Ratio <- reclassify(dNBR, c( -Inf  , -0.1, -2   , 
+                                       -0.1  ,  0.1,  -1   ,
+                                        0.1  ,  0.27, 0 ,
+                                        0.27,   0.66, 0.75,
+                                        0.66 ,  Inf , 1.5   ))
 
 
 # ------------------------ Visualisation ------------------------ 
 
 #color definition
-colors <- c("#21610B", "#40FF00", "#F3F781", "#FF8000","#FF0000")
+colorsOLD <- c("#21610B", "#40FF00", "#F3F781", "#FF8000","#FF0000")
 
-#Mapview options
-mapviewOptions(basemaps = c("OpenStreetMap.DE"),
-               raster.palette = colors,
-               na.color = "magenta",
-               layers.control.pos = "topright")
-
-
-#Mapview of difference Normalized Burn Ratio and Villages
-mapview(dNBR, col = colors)# + mapview(villages)
-
+colors <- c("#21610B","#40FF00","#F3F781","#FF8000", "#FF0000")
 
 #Plots the difference NBR
-plot(dNBR,col = colors,breaks = c(-2,-0.1,0.1,0.27,0.66,2), main="Difference Normalized Burn Ratio")
+#plot(Burn_Ratio,col = colorsOLD, main="Difference Normalized Burn Ratio")
+#plot(dNBR, breaks = c(-2,-0.1,0.1,0.27,0.66,2),col = colorsOLD,main="Difference Normalized Burn Ratio")
+
 
 #Histogramm to show distribution of the values
-#hist(dNBR,
+#hist(Burn_Ratio,
 #     breaks = c(-2,-0.1,0.1,0.27,0.66,2),
 #     main = "Difference Normalized Burn Ratio",
 #     xlab = "Strength (m)", ylab = "Number of Pixels",
 #     col = colors)
 
 
+#Mapview options
+mapviewOptions(basemaps = c("OpenStreetMap.DE"),
+               raster.palette = colors,
+               na.color ="transparent",
+               layers.control.pos = "topright")
 
+
+#Mapview of difference Normalized Burn Ratio and Villages
+mapview(Burn_Ratio, col.regions = colors, at = seq(-2, 2, 0.75)) + mapview(villages)
 
 
