@@ -1,0 +1,66 @@
+#!/usr/bin/env python2
+
+import logging
+import argparse
+from os import path, walk, listdir, system
+import re
+
+import geojson
+from sentinelsat.sentinel import SentinelAPI, geojson_to_wkt
+
+# log to stderr. stdout is used for pipe communications!
+logger = logging.getLogger()
+logger.setLevel(logging.WARN)
+logger.addHandler(logging.StreamHandler())
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--aoi", help="area of interest as geojson string", default='./')
+parser.add_argument("--input", help="directory containing the SAFE tiles to process", default='./')
+parser.add_argument("--output", help="directory containing the resulting stitched TIF", default='./')
+args = parser.parse_args()
+
+aoi = geojson_to_wkt(geojson.loads(args.aoi))
+
+# find L2A dirs
+l2aDirs = []
+allDirs = [path.join(args.input, o) for o in listdir(args.input)
+                    if path.isdir(path.join(args.input, o))]
+
+for directory in allDirs:
+    if re.match('.*MSIL2A.*', directory):
+        l2aDirs.append(directory)
+
+# group L2A dirs by orbit TODO
+orbits = [('20181212', l2aDirs)]
+
+bandWhitelist = [
+    '.*B06_20m\.jp2$',
+    # TODO
+]
+
+def callGdal(args):
+    # TODO: error handling
+    return system('gdalbuildvrt {}'.format(args))
+
+for date, tiles in orbits:
+    # find all .jp2 files within the L2A matching dirs
+    for tile in tiles:
+        jp2Files = []
+        fileLists = [directory for directory in walk(tile)]
+        allFiles = [path.join(folder[0], file) for folder in fileLists for file in folder[2]]
+        for file in allFiles:
+            if re.match('.*IMG_DATA.*\.jp2$', file):
+                # TODO: filter duplicate bands (by resolution) with bandWhitelist
+                jp2Files.append(file)
+
+        # build VRT for each tile via gdal_build_vrt
+        callGdal('-separate {} {}'.format(
+            '{}.vrt'.format(tile),
+            ' '.join(jp2Files) # DANGER: spaces in filepath not allowed
+        ))
+
+    # stitch/merge the tiles via gdal_build_vrt (no -separate!)
+    # callGdal('{} {}')
+
+    # clip to aoi, output the the output TIF
+    # filename should be 'preprocessed_{}.tif'.format(productDate)
