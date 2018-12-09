@@ -24,6 +24,7 @@ parser.add_argument("--enddate", help="YYYYMMDD", default='NOW')
 parser.add_argument("--cloud", help="maximum cloud cover percentage", default=100)
 parser.add_argument("--user", help="Copernicus Apihub username", default='user')
 parser.add_argument("--password", help="Copernicus Apihub password", default='user')
+parser.add_argument("--processed-dir", help="directory containing the preprocessed files (to check cache)", default='./')
 args = parser.parse_args()
 
 api = SentinelAPI(
@@ -78,6 +79,17 @@ productDict = {i: p for i, p in enumerate(products)}
 
 logger.warn('%s scenes found with a total size of %.2f GB', len(productDict), api.get_products_size(productDict))
 
-# print the product IDs row by row for piping
+def preprocessedName(product, liste = []):
+    productDate = product['beginposition'].strftime('%Y%m%d')
+    return 'preprocessed_{}.tif'.format(productDate)
+
+def isPreprocessed(product, folder = args.processed_dir):
+    return os.path.isfile(os.path.join(folder, preprocessedName(product)))
+
+# print the product IDs row by row for piping, skipping products for dates
+# which already have a preprocessed image.
 for p in products:
+    if isPreprocessed(p):
+        continue
+
     print p['uuid']
