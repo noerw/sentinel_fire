@@ -21,34 +21,50 @@ args = parser.parse_args()
 
 aoi = geojson_to_wkt(geojson.loads(args.aoi))
 
+def checkJp2(filePath):
+    ''' decides if a jp2 file should be used for a composite
+    '''
+    BANDS_TO_KEEP = [
+        'B06_20m.jp2',
+        # TODO
+    ]
+
+    for k in BANDS_TO_KEEP:
+        if filePath.endswith(k):
+            return True
+
+    return False
+
+def listDirectory(directory, listType = 'file', recursive = True):
+    if recursive:
+        dirs = [d for d in walk(directory)]
+    else:
+        dirs = [walk(directory).next()]
+
+    listType = 1 if listType == 'dir' else 2
+    return [path.join(folder[0], sub) for folder in dirs for sub in folder[listType]]
+
+def callGdal(args):
+    # TODO: error handling
+    # TODO: redirect output to stderr
+    return system('gdalbuildvrt {}'.format(args))
+
 # find L2A dirs
 l2aDirs = []
-allDirs = [path.join(args.input, o) for o in listdir(args.input)
-                    if path.isdir(path.join(args.input, o))]
-
-for directory in allDirs:
+for directory in listDirectory(args.input, listType = 'dir', recursive = False):
     if re.match('.*MSIL2A.*', directory):
         l2aDirs.append(directory)
 
 # group L2A dirs by orbit TODO
-orbits = [('20181212', l2aDirs)]
-
-bandWhitelist = [
-    '.*B06_20m\.jp2$',
-    # TODO
+orbits = [
+    ('20181212', l2aDirs)
 ]
-
-def callGdal(args):
-    # TODO: error handling
-    return system('gdalbuildvrt {}'.format(args))
 
 for date, tiles in orbits:
     # find all .jp2 files within the L2A matching dirs
     for tile in tiles:
         jp2Files = []
-        fileLists = [directory for directory in walk(tile)]
-        allFiles = [path.join(folder[0], file) for folder in fileLists for file in folder[2]]
-        for file in allFiles:
+        for file in listDirectory(tile):
             if re.match('.*IMG_DATA.*\.jp2$', file):
                 # TODO: filter duplicate bands (by resolution) with bandWhitelist
                 jp2Files.append(file)
@@ -62,5 +78,5 @@ for date, tiles in orbits:
     # stitch/merge the tiles via gdal_build_vrt (no -separate!)
     # callGdal('{} {}')
 
-    # clip to aoi, output the the output TIF
+    # clip to aoi, output the resulting TIF
     # filename should be 'preprocessed_{}.tif'.format(productDate)
