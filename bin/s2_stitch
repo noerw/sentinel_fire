@@ -4,6 +4,7 @@ import logging
 import argparse
 from os import path, walk, listdir, system
 import re
+from subprocess import Popen, PIPE
 
 import geojson
 from sentinelsat.sentinel import SentinelAPI, geojson_to_wkt
@@ -24,9 +25,20 @@ aoi = geojson_to_wkt(geojson.loads(args.aoi))
 def checkJp2(filePath):
     ''' decides if a jp2 file should be used for a composite
     '''
+    # TODO check if ordering of file inputs is always the samej
     BANDS_TO_KEEP = [
+        'B01_60m.jp2',
+        'B02_20m.jp2',
+        'B03_20m.jp2',
+        'B04_20m.jp2',
+        'B05_20m.jp2',
         'B06_20m.jp2',
-        # TODO
+        'B07_20m.jp2',
+        'B8A_20m.jp2',
+        'B09_60m.jp2',
+        'B10_60m.jp2',
+        'B11_20m.jp2',
+        'B12_20m.jp2',
     ]
 
     for k in BANDS_TO_KEEP:
@@ -46,8 +58,10 @@ def listDirectory(directory, listType = 'file', recursive = True):
 
 def callGdal(args):
     # TODO: error handling
-    # TODO: redirect output to stderr
-    return system('gdalbuildvrt {}'.format(args))
+    output = Popen('gdalbuildvrt {}'.format(args).split(' '), stdout=PIPE)
+    std, stderr = output.communicate()
+    if std: logger.warn(std)
+    if stderr: logger.warn(stderr)
 
 # find L2A dirs
 l2aDirs = []
@@ -66,8 +80,8 @@ for date, tiles in orbits:
         jp2Files = []
         for file in listDirectory(tile):
             if re.match('.*IMG_DATA.*\.jp2$', file):
-                # TODO: filter duplicate bands (by resolution) with bandWhitelist
-                jp2Files.append(file)
+                if checkJp2(file):
+                    jp2Files.append(file)
 
         # build VRT for each tile via gdal_build_vrt
         callGdal('-separate {} {}'.format(
