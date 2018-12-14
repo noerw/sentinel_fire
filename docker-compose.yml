@@ -12,3 +12,14 @@ services:
       - S2_END
       - S2_OUTDIR
       - S2_CLOUDCOVERAGE
+
+  s2_monitor:
+    build: ./Dockerfile.monitoring
+    volumes:
+      - ./data:/app/data
+    environment:
+      - S2_USER
+      - S2_PASS
+      - S2_AOI
+      - S2_OUTDIR
+      - S2_CLOUDCOVERAGE

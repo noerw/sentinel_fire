@@ -21,7 +21,7 @@ RUN pip install -r requirements.txt
 # install our code
 COPY . .
 
-ENV PATH="/app/bin:/app/sen2cor/bin:${PATH}"
+ENV PATH="/app/bin:/app/bin/sen2cor/bin:${PATH}"
 ENV S2_USER
 ENV S2_PASS
 ENV S2_AOI

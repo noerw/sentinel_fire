@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# once every 15 mins
+30 */12 * * * * /app/bin/s2_pipeline -a "$S2_AOI" -s NOW-5DAYS -e NOW -o "$S2_OUTDIR" -c $S2_CLOUDCOVERAGE

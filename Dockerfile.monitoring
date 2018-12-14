@@ -1,0 +1,13 @@
+FROM noerw/sentinel_fire
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y cron \
+    apt-get clean && apt-get autoremove -y
+
+# install crontab
+COPY crontab /crontab
+RUN /usr/bin/crontab /crontab
+
+CMD ["cron", "-f"]
