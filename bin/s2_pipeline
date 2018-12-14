@@ -94,7 +94,7 @@ mkdir -p $outdir/data
 # - filter L1C tiles to apply correction to
 # - apply athmospheric correction (sen2cor) to L1C tiles
 
-$SCRIPTDIR/s2_query --aoi "$aoi" --startdate "$startdate" --enddate "$enddate" --cloud "$cloud" |
+$SCRIPTDIR/s2_query --aoi "$aoi" --startdate "$startdate" --enddate "$enddate" --cloud "$cloud" --processed-dir $outdir/data |
   xargs -L1 -P2 $SCRIPTDIR/s2_download $outdir/data |
   grep 'MSIL1C' | # only L1C products need to be processed. TODO: also skip for already existing L2A
   xargs -L1 -P$sen2cor_instances $sen2cor_bin --resolution $sen2cor_res

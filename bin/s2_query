@@ -81,7 +81,7 @@ logger.warn('%s scenes found with a total size of %.2f GB', len(productDict), ap
 
 def preprocessedName(product, liste = []):
     productDate = product['beginposition'].strftime('%Y%m%d')
-    return 'preprocessed_{}.tif'.format(productDate)
+    return '{}_l2a.tif'.format(productDate)
 
 def isPreprocessed(product, folder = args.processed_dir):
     return os.path.isfile(os.path.join(folder, preprocessedName(product)))
