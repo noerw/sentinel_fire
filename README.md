@@ -3,7 +3,7 @@ Burned area detection on Sentinel 2 imagery for monitoring of conflict areas.
 
 > Study project at [ifgi](https://ifgi.de), winter term 2018.
 
-Directory structure:
+### Directory structure
 ```
 .
 ├── projectdir1
