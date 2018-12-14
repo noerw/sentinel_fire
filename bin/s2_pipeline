@@ -8,14 +8,61 @@ set -o pipefail
 # usage:
 # s2_preprocessed '{"type":"Polygon","coordinates":[[[1,1], [2,3], [3,4]]]}' 20181001 20181015 20 usern passw
 
-aoi=$1
-startdate=${2:-'NOW-5DAYS'}
-enddate=${3:-'NOW'}
-cloud=${4:-'20'}
-export S2_USER=${5:-'user'}
-export S2_PASS=${6:-'user'}
-outdir=${7:-"$PWD"}
+aoi=''
+startdate='NOW-5DAYS'
+enddate='NOW'
+cloud='20'
+outdir="$PWD"
+export S2_USER
+export S2_PASS
 
+# handle flags
+while test $# -gt 0; do
+  case "$1" in
+    -h|--help)
+      echo "s2_pipeline - sentintel 2 change detection processing pipeline"
+      echo " "
+      echo "s2_pipeline [options]"
+      echo " "
+      echo "options:"
+      echo "-h, --help                show brief help."
+      echo "-a, --aoi                 area of interest as geojson polygon geometry. Required."
+      echo "-s, --start               start date 'YYYYMMDD' or 'NOW-XDAYS'. Default 'NOW-5DAYS'."
+      echo "-e, --end                 end date 'YYYYMMDD' or 'NOW-XDAYS'. Default 'NOW'."
+      echo "-o, --outdir              path to output directory. Defaults to directory where the script was executed."
+      echo "-c, --cloudcoverage       maximum percentage of allowed cloud coverage. Default '20'."
+      exit 0
+      ;;
+    -a|--aoi)
+      shift
+      aoi=$1
+      shift
+      ;;
+    -s|--start)
+      shift
+      startdate=$1
+      shift
+      ;;
+    -e|--end)
+      shift
+      startdate=$1
+      shift
+      ;;
+    -o|--outdir)
+      shift
+      outdir=$1
+      shift
+      ;;
+    -c|--cloudcoverage)
+      shift
+      cloud=$1
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 
 function parallelism {
   # checks the available memory, and returns the number of instances that can be
