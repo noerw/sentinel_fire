@@ -4,5 +4,11 @@ services:
     image: noerw/sentinel_fire:latest
     volumes:
       - ./data:/app/data
-
-
+    environment:
+      - S2_USER
+      - S2_PASS
+      - S2_AOI
+      - S2_START
+      - S2_END
+      - S2_OUTDIR
+      - S2_CLOUDCOVERAGE
