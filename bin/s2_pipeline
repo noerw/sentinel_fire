@@ -75,36 +75,43 @@ function parallelism {
 
 SCRIPTDIR=${BASH_SOURCE%/*}
 sen2cor_bin="$SCRIPTDIR/sen2cor/bin/L2A_Process"
-sen2cor_res=20
+sen2cor_res=60
 
-sen2cor_instances=`parallelism 7000`
+sen2cor_instances=`parallelism 5000`
 
 if [ "$sen2cor_instances" -eq "0" ]; then
-   echo "not enough memory to do sen2cor preprocessing!";
-   exit 1;
+  echo "not enough memory to do sen2cor preprocessing!";
+  exit 1;
 fi
+
+mkdir -p $outdir/data
 
 # using bash pipes and xargs gives us smart parallelism, all without Apache Storm, Spark,
 # Hadoop or whatever! (who needs replayability, just start the pipe again, completed work is cached)
 
+# first pipeline:
+# - download two in parallel (API limitation)
+# - filter L1C tiles to apply correction to
+# - apply athmospheric correction (sen2cor) to L1C tiles
+
 $SCRIPTDIR/s2_query --aoi "$aoi" --startdate "$startdate" --enddate "$enddate" --cloud "$cloud" |
-
-  # download two in parallel (API limitation)
-  xargs -L1 -P2 $SCRIPTDIR/s2_download $outdir |
-
-  # filter L1C tiles to apply correction to:
+  xargs -L1 -P2 $SCRIPTDIR/s2_download $outdir/data |
   grep 'MSIL1C' | # only L1C products need to be processed. TODO: also skip for already existing L2A
-
   xargs -L1 -P$sen2cor_instances $sen2cor_bin --resolution $sen2cor_res
 
-# wait for all previous steps to complete, as we need /all/ images for merging
+# wait for all previous steps to complete, as we need /all/ images for merging, then start second pipeline:
+# - combine bands of each tile into .vrt files
+# - join/stitch images of the same orbit
+# - clip to AoI
 
-# remove L1C files
-# rm $outdir/*MSIL1C*
+# TODO
+# resulting clipped tif should be named $DATE_l2a.tif
+# resulting changedetection tif should be named $DATE_dnbr.tif
 
-# start second pipeline
+# clean up intermediate files
+rm -rf $outdir/data/{*MSIL1C*,*MSIL2A*,*.vrt,*.zip}
 
-# xargs -L1 -P4 $SCRIPTDIR/s2_gdal |
-#   xargs $SCRIPTDIR/s2_group_orbits
-#   xargs $SCRIPTDIR/s2_merge
+# (re-) create the visualization from template
+mkdir $outdir/html
 
+# TODO
