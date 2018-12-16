@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# arguments: <indir> <outdir>
+
+# all outputs can be found in /outdir/log.txt
+# the single stdout value is a search for a tiff in the output folder, this needs to be 
+# changed together with the output tiff name convention
+
+# [ ] what should the output tiff be named? right now it's named after the input folder
+# [ ] also change output value accordingly
+# [ ] weird error while creating the tiff: "Warning 1: Unable to export GeoTIFF file with different datatypes per different bands. All bands should have the same types in TIFF."
+#     but works anyway
+# [ ] date thingy
+
+#check whether enough arguments given
+if [ "$2" = "" ]
+then echo "not enough arguments given"
+     echo "usage : <indir> <outdir>"
+exit
+fi
+
+indir=$1
+outdir=$2
+
+#check whether input directories exist
+if [ ! -d "$indir" ]
+ then echo "input directory doesn't exist!"
+  exit
+fi
+
+if [ ! -d "$outdir" ]
+ then echo "output directory doesn't exist!"
+  exit
+fi
+
+#make sure outdir doesn't have an appended '/'
+outdir=${outdir%/}
+
+#create log file
+log=$outdir/log.txt
+touch $log
+echo "script started with indir = $indir & outdir = $outdir" 1>> $log 2>> $log
+
+#for every tile, do
+l2a_tiles=`find $indir -name "*MSIL2A*" -type d`
+for tile in $l2a_tiles
+do
+tilename=$(basename ${tile})
+outtilename=$outdir/$tilename
+
+echo "working on $tilename" >> $outdir/log.txt
+#filter for bands that we need
+bandlist=`find $tile -path '*IMG_DATA*.jp2' -type f ! -name *AOT* ! -name *WVP* ! -name *TCP* ! -name *TCI_20* ! -name *TCI_60* ! -name *SCL* ! -name *B02_20* ! -name *B03_20* ! -name *B04_20* ! -name *B02_60* ! -name *B03_60* ! -name *B04_60* ! -name *B05_60* ! -name *B06_60* ! -name *B07_60* ! -name *B09_60* ! -name *B11_60* ! -name *B12_60* ! -name *B8A_60* | sort`
+
+#build vrt for every tile
+gdalbuildvrt -separate -resolution highest -overwrite $outtilename.vrt $bandlist 1>> $log 2>> $log
+done
+echo "done with tiles" >> $log
+
+echo "starting clipping" >> $log
+gdalbuildvrt -resolution highest -overwrite $outdir/clipped.vrt `find $outdir -name '*.vrt'` 1>> $log 2>> $log
+
+# how should the output files be named? now -> folder that they come from
+gdal_translate -of GTiff $outdir/clipped.vrt $outdir/$(basename ${indir}).tiff 1>> $log 2>> $log
+
+echo `find $outdir -name "*.tiff"`
