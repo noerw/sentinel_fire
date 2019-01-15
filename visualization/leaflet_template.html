@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+
+  <style>
+    html, body, #map {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+  </style>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css" crossorigin=""/>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet-src.js" crossorigin=""></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/1.3.4/chroma.min.js"></script>
+  <script src="https://npmcdn.com/geotiff@0.3.6/dist/geotiff.js"></script>
+  <script src="https://unpkg.com/leaflet-canvaslayer-field@1.4.1/dist/leaflet.canvaslayer.field.js" crossorigin=""></script>
+
+  <!-- the variables below are inserted via %%templating%% -->
+  <script type="application/javascript">
+    const aoi = {"type":"Feature", "geometry":{"type":"Polygon","coordinates":[[[7.35466,52.67055],[7.220078,52.7051],[7.34436,52.86457],[7.481689,52.83223],[7.35466,52.67055]]]}}
+
+    // TIFs must be in EPGS:4326!
+    const tifs = ['../data/meppen2/data/asdf2.tif']
+
+    // const aoi = {"type":"Feature", "geometry":%%AOI%%}
+    // const tifs = [%%TIFS%%]
+  </script>
+
+  <script type="application/javascript">
+    const map = L.map('map').setView([51.505, -0.09], 13);
+    const bg = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png').addTo(map)
+    const aoiLayer = L.geoJSON(aoi, {
+      style: {
+        interactive: false,
+        fillColor: '#aaa',
+        opacity: 0,
+      }
+    }).addTo(map);
+    map.setView(aoiLayer.getBounds().getCenter(), 12)
+
+    function tif2Layer (url) {
+      console.log(`fetching TIF at ${url}`)
+      return fetch(url)
+        .then(res => res.arrayBuffer())
+        .then(tifData => {
+          console.log(`parsing TIF at ${url}`)
+          const scalarField = L.ScalarField.fromGeoTIFF(tifData, bandIndex = 0)
+
+          console.log(`creating layer for TIF at ${url}`)
+          const layer = L.canvasLayer.scalarField(scalarField, {
+            color: chroma.scale('RdPu').domain(scalarField.range),
+            opacity: 0.65
+          })
+
+          layer.on('click', function (e) {
+            if (e.value !== null) {
+              const dnbr = e.value.toFixed(0)
+              const popup = L.popup()
+                .setLatLng(e.latlng)
+                .setContent(`<span class="popupText">dNBR: ${dnbr}</span>`)
+                .openOn(map)
+            }
+          })
+          return layer
+        })
+    }
+
+    // load the TIF files
+    tifs
+      .sort()
+      .map(url => tif2Layer(url).then(layer => {
+        layer.addTo(map)
+      }))
+
+  </script>
+</body>
+</html>
