@@ -1,0 +1,74 @@
+#!/usr/bin/env python2
+
+import argparse
+import geojson
+import logging
+from os import path, walk
+import re
+from subprocess import Popen, PIPE
+
+# log to stderr. stdout is used for pipe communications!
+logger = logging.getLogger()
+logger.setLevel(logging.WARN)
+logger.addHandler(logging.StreamHandler())
+
+def listDirectory(directory, listType = 'file', recursive = True):
+    if recursive:
+        dirs = [d for d in walk(directory)]
+    else:
+        dirs = [walk(directory).next()]
+
+    listType = 1 if listType == 'dir' else 2
+    return [path.join(folder[0], sub) for folder in dirs for sub in folder[listType]]
+
+parser = argparse.ArgumentParser()
+parser.add_argument('indir', type = str, help = 'directory to retrieve the input files from')
+parser.add_argument('aoi', type = str, help = 'area of interest geojson string')
+parser.add_argument('--filepattern', help = 'RegEx pattern to use to match input files', default = '.*_dnbr.tif$')
+parser.add_argument('--template', help = 'Template to use for visualization generation', default = 'leaflet_villages')
+args = parser.parse_args()
+
+# prepare area of interest (make sure it is a feature)
+aoi = geojson.dumps(geojson.Feature('aoi', geojson.loads(args.aoi)), geojson.GeoJSONEncoder)
+
+# get list of tiles
+if not path.isdir(args.indir):
+    raise Exception('{} is not a directory'.format(args.indir))
+
+tifs = listDirectory(args.indir, recursive=False)
+tifs = [f for f in tifs if re.match(args.filepattern, f)]
+if not len(tifs):
+    raise Exception('no files matched to filepattern "{}"'.format(args.filepattern))
+
+# generate thumbnails: lower resolution for render performance, EPSG:4326
+# -r max -> resample using maximum value from all resampled pixels
+# -t_srs reproject to WGS84
+# -ts 1000 0 scale to 1000px width
+thumbs = []
+for tif in tifs:
+    thumb = tif.replace('.tif', '.thumb.tif')
+    cmd = 'gdalwarp -r max -t_srs "EPSG:4326" -ts 1000 0 -overwrite {} {}'.format(tif, thumb)
+    output = Popen(cmd, stdout=PIPE, shell=True)
+    std, stderr = output.communicate()
+    if stderr:
+        raise Exception(stderr)
+    else:
+        thumbs.append(thumb)
+
+templateFiles = dict({
+    "leaflet_villages": path.abspath(path.dirname(__file__) + '/../visualization/leaflet_villages.html.template'),
+})
+
+if not (templateFiles.get(args.template) and path.isfile(templateFiles[args.template])):
+    raise Exception('{} is not a valid template'.format(args.template))
+
+# read template, apply content, write result to <indir>/visualization.html
+with open(templateFiles[args.template], 'r') as templateFile:
+    outFile = path.join(args.indir, 'visualization.html')
+    tifList = ','.join(['"./{}"'.format(path.basename(f)) for f in thumbs])
+    template = templateFile.read()
+    template = template.replace('%%AOI%%', aoi)
+    template = template.replace('%%TIFS%%', tifList)
+    with open(outFile, 'w') as out:
+        out.write(template)
+    print outFile
