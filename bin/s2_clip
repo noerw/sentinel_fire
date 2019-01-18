@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # all outputs can be found in /OUTDIR/log.txt
-# creates a .tiff named INDIR_INPUTDATE.tiff
-# also returns the path to that .tiff file in console
+# creates a .tif named INPUTDATE_l2a.tif
+# also returns the path to that .tif file in console
 
-# [ ] weird error while creating the tiff: "Warning 1: Unable to export GeoTIFF file with different datatypes per different bands. All bands should have the same types in TIFF."
+# [ ] weird error while creating the tif: "Warning 1: Unable to export GeoTIFF file with different datatypes per different bands. All bands should have the same types in TIFF."
 #     but works anyway
 
 INDIR=''
@@ -51,31 +51,7 @@ while test $# -gt 0; do
   esac
 done
 
-# function that searches INDIR for valid tiles
-checkfolder () {
-  IN=$(date -d $1)
-  PLUS=$(date -d "$1+1 days")
-  MINUS=$(date -d "$1-1 days")
-  # extract date from folder
-  PRODUCTLIST=`find $2 -name "*L2A*" -path "*.SAFE"`
-  for PRODUCT in $PRODUCTLIST
-  do
-  NAME=$(basename ${PRODUCT})
-  DATE=`date -d ${NAME:11:8}`
-  if [ "$DATE" = "$PLUS" ] || [ "$DATE" = "$MINUS" ] || [ "$DATE" = "$IN" ]
-  then echo $PRODUCT
-  fi
-  done
-}
-
 # check whether input directories & date exist
-#for dir in $INDIR
-#do
-#  if [ ! -d "$dir" ]
-#  then echo "input directory $dir doesn't exist!"
-#  exit
-#fi
-##done
 
 if [ ! -d "$OUTDIR" ]
   then echo "output directory doesn't exist!"
@@ -101,9 +77,7 @@ vrtlist=$OUTDIR/vrt_$timestamp.txt
 touch $vrtlist
 
 # call checkfolder to create list of tiles with matching date +-1 day
-#TILELIST=`checkfolder $INPUTDATE $INDIR` 1>> $log 2>> $log
 TILELIST=$INDIR
-#echo "TILELIST: $TILELIST" 1>> $log 2>> $log
 # if TILELIST isn't empty
 if [ "$TILELIST" != "" ]
  then l2a_tiles=$TILELIST
@@ -131,8 +105,6 @@ echo "done with tiles" >> $log
 # output tiff is named inputfolder_inputdate.tiff
 DATE=$(basename ${l2a_tiles%% *})
 TIFFNAME=${DATE:45:8}
-#TIFFNAME=`date '+%Y%m%d' -d $DATE 2>/dev/null`
-#stitchedpath=$OUTDIR/$(basename ${INDIR})_$TIFFNAME
 stitchedpath="${OUTDIR}/${TIFFNAME}_l2a"
 
 # Stitching
