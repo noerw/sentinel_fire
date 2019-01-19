@@ -2,85 +2,107 @@ rm(list=ls())
 
 
 # ------------------------ Libraries ------------------------ 
+
+library(rgdal)
+if (!require(geojsonio)) {
+  install.packages("geojsonio")
+  library(geojsonio)
+}
 library(sp)
 library(raster)
+library(maps)
+library(ggmap)
+library(maptools)
+library(mapview)
+library(RColorBrewer)
+library(NISTunits)
+library(raster)
 
-#here your direction
-#here your direction
-setwd("D:/Uni/Master/Monitoring")
+# ------------------------ Function definition ------------------------ 
+BAIS2 <- function(outpath, beforeImage, afterImage){
+
+# ------------------------ Loading Bands ------------------------ 
+#BEFORE#
+before_R20m_file <- beforeImage
+
+#AFTER#
+after_R20m_file  <- afterImage
+
+#Before Bands
+Before_Band01  = raster(before_R20m_file,band = 1)
+Before_Band02  = raster(before_R20m_file,band = 2)
+Before_Band03  = raster(before_R20m_file,band = 3)
+Before_Band04  = raster(before_R20m_file,band = 4)
+Before_Band05  = raster(before_R20m_file,band = 5)
+Before_Band06  = raster(before_R20m_file,band = 6)
+Before_Band07  = raster(before_R20m_file,band = 7)
+Before_Band08  = raster(before_R20m_file,band = 8)
+Before_Band8A  = raster(before_R20m_file,band = 9)#10
+Before_Band11  = raster(before_R20m_file,band = 8)
+Before_Band12  = raster(before_R20m_file,band = 9)
+
+#After Bands
+After_Band01  = raster(after_R20m_file,band = 1)
+After_Band02  = raster(after_R20m_file,band = 2)
+After_Band03  = raster(after_R20m_file,band = 3)
+After_Band04  = raster(after_R20m_file,band = 4)
+After_Band05  = raster(after_R20m_file,band = 5)
+After_Band06  = raster(after_R20m_file,band = 6)
+After_Band07  = raster(after_R20m_file,band = 7)
+After_Band08  = raster(after_R20m_file,band = 8)
+After_Band8A  = raster(after_R20m_file,band = 9) #10
+After_Band11  = raster(after_R20m_file,band = 8)
+After_Band12  = raster(after_R20m_file,band = 9)
 
 
 # ------------------------ Before Fire ------------------------ 
 
-beforDir <- "./myanmar_l2a/S2B_MSIL2A_20180916T041539_N0206_R090_T46QDH_20180916T075813.SAFE/R20m/"
-Myanmar_before_20m <- list.files(path = beforDir, pattern = ".jp2")
-Myanmar_before_20m <- lapply(paste0(beforDir, Myanmar_before_20m), raster)
-
-
-# add different bands 
-B01 <- Myanmar_before_20m[[1]]
-B02 <- Myanmar_before_20m[[2]]
-B03 <- Myanmar_before_20m[[3]]
-B04 <- Myanmar_before_20m[[4]]
-B06 <- Myanmar_before_20m[[6]]
-B07 <- Myanmar_before_20m[[7]]
-B8A <- Myanmar_before_20m[[10]]
-B11 <- Myanmar_before_20m[[8]]
-B12 <- Myanmar_before_20m[[9]]
-
-
-#Water Pixels (WP)
-WP <--   ((B8A+B11+B12)-(B01+B02+B03)) / ((B8A+B11+B12)+(B01+B02+B03))
-plot(WP)
-title(main = "WP")
-
-#file:///Users/albert/Downloads/proceedings-02-00364-v3.pdf
-#Burned Area Index for Sentinel-2 (BAIS2)
-BAIS2 <- (1- sqrt((B06*B07*B8A)/B04) * ( (B12-B8A) / (sqrt(B12+B8A) ) +1) )
-
-plot(BAIS2)
-title(main = "BAIS2")
-
-
-
-# ------------------------ After Fire ------------------------ 
-beforDir <- "./myanmar_l2a/S2B_MSIL2A_20181026T041839_N0206_R090_T46QDH_20181026T080327.SAFE/R20m/"
-Myanmar_after_20m <- list.files(path = beforDir, pattern = ".jp2")
-Myanmar_after_20m <- lapply(paste0(beforDir, Myanmar_after_20m), raster)
-
-
-
-# add different bands
-AB01 <- Myanmar_before_20m[[1]]
-AB02 <- Myanmar_before_20m[[2]]
-AB03 <- Myanmar_before_20m[[3]]
-AB04 <- Myanmar_before_20m[[4]]
-AB06 <- Myanmar_before_20m[[6]]
-AB07 <- Myanmar_before_20m[[7]]
-AB8A <- Myanmar_before_20m[[10]]
-AB11 <- Myanmar_before_20m[[8]]
-AB12 <- Myanmar_before_20m[[9]]
-
-#Water Pixels (WP)
-AWP <--   ((AB8A+AB11+AB12)-(AB01+AB02+AB03)) / ((AB8A+AB11+AB12)+(AB01+AB02+AB03))
-plot(AWP)
-title(main = "AWP")
-
+#Before Water Pixels (Before_WP)
+Before_WP <--   ((Before_Band8A+Before_Band08+Before_Band12)-(Before_Band01+Before_Band02+Before_Band03)) / 
+         ((Before_Band8A+Before_Band11+Before_Band12)+(Before_Band01+Before_Band02+Before_Band03))
 
 #Burned Area Index for Sentinel-2 (BAIS2)
-ABAIS2 <- (1- sqrt((AB06*AB07*AB8A)/AB04) * ( (AB12-AB8A) / (sqrt(AB12+AB8A) ) +1) ) / 2
+Before_BAIS2 <- (1- sqrt((Before_Band06*Before_Band07*Before_Band8A)/Before_Band04) * 
+         ( (Before_Band12-Before_Band8A) / (sqrt(Before_Band12+Before_Band8A) ) +1) )
+
+#Water Pixels (After_WP)
+After_WP <--   ((After_Band8A+After_Band11+After_Band12)-(After_Band01+After_Band02+After_Band03)) / 
+               ((After_Band8A+After_Band11+After_Band12)+(After_Band01+After_Band02+After_Band03))
+
+#Burned Area Index for Sentinel-2 (BAIS2)
+After_BAIS2 <- (1- sqrt((After_Band06*After_Band07*After_Band8A)/After_Band04) * 
+               ( (After_Band12-After_Band8A) / (sqrt(After_Band12+After_Band8A) ) +1) ) / 2
 
 
 
-#------------------------ Visualisation ------------------------ 
-#set colors
-colors <- c("red", "#40FF00", "#F3F781")
+#------------------------ Reclassification ------------------------ 
+#find out the breaks
+Before_limits <- summary(Before_BAIS2)
+
+#reclassify the result
+Before_BAIS2 <- reclassify(Before_BAIS2, c( Before_limits[1] , Before_limits[2], -1  , 
+                                            Before_limits[2] , Before_limits[3], -0.6,
+                                            Before_limits[3] , Before_limits[4],  0  ,
+                                            Before_limits[4] , Before_limits[5],  0.75))
 
 #find out the breaks
-summary(ABAIS2)
+After_limits <- summary(After_BAIS2)
 
+#reclassify the result
+After_BAIS2 <- reclassify(After_BAIS2, c( After_limits[1] , After_limits[2], -1  , 
+                                          After_limits[2] , After_limits[3], -0.6,
+                                          After_limits[3] , After_limits[4],  0  ,
+                                          After_limits[4] , After_limits[5],  0.75))
 
-plot(ABAIS2,col=colors, breaks = c(-13979.48526, -15.76164, 665601.58220),main="Burned Area Index for Sentinel-2")
+# ------------------------ Output ------------------------ #
 
-plot(ABAIS2)
-title(main = "Burned Area Index for Sentinel-2")
+before_result <- brick(Before_BAIS2)
+writeRaster(before_result,outpath)
+
+cat(outpath)
+
+}
+
+args = commandArgs(trailingOnly=TRUE)
+
+BAIS2(args[1],args[2],args[3])
