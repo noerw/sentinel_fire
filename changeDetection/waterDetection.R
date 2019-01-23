@@ -1,25 +1,12 @@
-rm(list=ls())
+#rm(list=ls())
 
 
 # ------------------------ Libraries ------------------------ 
 
-library(rgdal)
-if (!require(geojsonio)) {
-  install.packages("geojsonio")
-  library(geojsonio)
-}
-library(sp)
-library(raster)
-library(maps)
-library(ggmap)
-library(maptools)
-library(mapview)
-library(RColorBrewer)
-library(NISTunits)
 library(raster)
 
 # ------------------------ Function definition ------------------------ 
-detectWater <- function(outpath, Image){
+detectWater <- function(Image){
   
   # ------------------------ Loading Bands ------------------------ 
   ##
@@ -45,16 +32,10 @@ detectWater <- function(outpath, Image){
   # ------------------------ Output ------------------------ #
   
   result <- brick(Water_Pixel)
-  writeRaster(result,outpath)
-  
-  cat(outpath)
+ 
+  return(result)
   
 }
-
-args = commandArgs(trailingOnly=TRUE)
-
-detectWater(args[1],args[2])
-  
   
   
   
