@@ -1,7 +1,8 @@
-# sentinel_fire
-Burned area detection on Sentinel 2 imagery for monitoring of conflict areas.
+# Sentinel_fire
 
-> Study project at [ifgi](https://ifgi.de), winter term 2018.
+## Introduction
+This project was developed in the scope of the study project "Monitoring Conflict Areas with Satellite Image Time Series" winter term 2018, at [ifgi](https://ifgi.de), as the concluding assignment.
+Burned area detection on Sentinel 2 imagery for monitoring of conflict areas.
 
 ### Directory structure
 ```
@@ -18,6 +19,23 @@ Burned area detection on Sentinel 2 imagery for monitoring of conflict areas.
 └── projectdir2
 │   ├─
 ```
+
+##Data
+
+##Installation
+
+##Input: Sentinel_fire
+
+## Contact Us
+For any queries, difficulties in installation and/or usage please contact one of the team.
+
+- Albert Hamzin 
+- Christopher Rohtermundt
+- Jan Suleiman
+- Jonathan Bahlmann
+- Norwin Roosen
+- Raoul Kanschat
+- Yousef Qamaz
 
 ## License
 GPL-3.0
