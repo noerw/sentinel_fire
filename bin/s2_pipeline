@@ -12,6 +12,7 @@ aoi=''
 startdate='NOW-5DAYS'
 enddate='NOW'
 cloud='20'
+cleanup=false
 outdir="$PWD"
 export S2_USER
 export S2_PASS
@@ -31,6 +32,7 @@ while test $# -gt 0; do
       echo "-e, --end                 end date 'YYYYMMDD' or 'NOW-XDAYS'. Default 'NOW'."
       echo "-o, --outdir              path to output directory. Defaults to directory where the script was executed."
       echo "-c, --cloudcoverage       maximum percentage of allowed cloud coverage. Default '20'."
+      echo "-C, --cleanup             if flag is set, temporary files will be deleted."
       exit 0
       ;;
     -a|--aoi)
@@ -58,6 +60,10 @@ while test $# -gt 0; do
       shift
       cloud=$1
       shift
+      ;;
+    -C|--cleanup)
+      shift
+      cleanup=true
       ;;
     *)
       break
@@ -102,19 +108,19 @@ $SCRIPTDIR/s2_query --aoi "$aoistring" --startdate "$startdate" --enddate "$endd
 
 
 # wait for all previous steps to complete, as we need /all/ images for merging, then start second pipeline:
-$SCRIPTDIR/s2_grouporbit --input $outdir/data/ | 
-  xargs -L1 -P2 $SCRIPTDIR/s2_clip --aoi $aoi --outputdir $outdir/data --input
 # - combine bands of each tile into .vrt files
 # - join/stitch images of the same orbit
 # - clip to AoI
+tiffs=`$SCRIPTDIR/s2_grouporbit --input $outdir/data/ | 
+  xargs -L1 -P2 $SCRIPTDIR/s2_clip --aoi $aoi --outputdir $outdir/data --input`
 
-
-# TODO
-# resulting clipped tif should be named $DATE_l2a.tif
-# resulting changedetection tif should be named $DATE_dnbr.tif
+# calling change detection scripts
+$SCRIPTDIR/s2_changedetection --input $tiffs --outputdir $outdir/data
 
 # clean up intermediate files
-rm -rf $outdir/data/{*MSIL1C*,*MSIL2A*,*.vrt,*.zip}
+if [ "$cleanup" = true ]; then
+  rm -rf $outdir/data/{*MSIL1C*,*MSIL2A*,*.vrt,*.zip}
+fi
 
 # (re-) create the visualization from template
 mkdir $outdir/html

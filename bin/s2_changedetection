@@ -1,0 +1,47 @@
+#!/usr/bin/env python2
+
+import argparse
+import os
+from subprocess import Popen, PIPE
+import logging
+import sys
+
+logger = logging.getLogger()
+logger.setLevel(logging.WARN)
+logger.addHandler(logging.StreamHandler())
+
+# argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("-i", "--input", nargs="+", help="Input folder", required = True)
+parser.add_argument("-o", "--outputdir", help="Output folder", required = True)
+parser.add_argument("-p", "--process", help="Select single process. Possible is 'dnbr' or 'bais2'. Defaults to both.")
+args = parser.parse_args()
+
+in_files = args.input.sort()
+output = os.path.abspath(args.outputdir)
+scriptdir = os.path.abspath(os.path.dirname(__file__))
+
+default_processes = ["dnbr", "bais2"]
+process = ""
+if not args.process:
+    process = default_processes
+elif not any([p == args.process for p in default_processes]):
+    logger.critical("Invalid process. Only {} are allowed.".format(default_processes))
+    sys.exit()
+else:
+    process = [args.process]
+
+pre = "Rscript --vanilla"
+processes = []
+processes.append(("bais2", os.path.abspath(os.path.join(scriptdir, "BAIS2.R")), "_bais2.tif", 1))
+processes.append(("dnbr", os.path.abspath(os.path.join(scriptdir, "dNBR.R")), "_dnbr.tif", 2))
+
+for i in range(0, len(in_files)):
+    for p in processes:
+        if any(p[0] == pr for pr in process):
+            fname = os.path.basename(in_files[i])[:-4] + p[2]
+            outputfile = os.path.join(output, fname)
+            cmd = pre + " " + p[1] + " " + outputfile + " " + os.path.abspath(in_files[i])
+            if (i < len(in_files)-1) and (p[3] == 2):
+                cmd += " " + os.path.abspath(in_files[i+1])
+            Popen(cmd, stdout=PIPE, shell=True))
