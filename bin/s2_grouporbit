@@ -1,0 +1,50 @@
+#!/usr/bin/env python2
+
+import os
+from datetime import datetime
+import argparse
+
+# argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--input", help="Input folder", required = True)
+args = parser.parse_args()
+
+# load all files from -i argument
+rel_path = args.input
+abs_path = os.path.abspath(rel_path)
+
+files = os.listdir(abs_path)
+
+# create a dict with dates as keys and 
+# a list of matching filenames as values
+date_dict = {}
+for f in range(0,len(files)):
+    if files[f].endswith('.SAFE'):
+        # get date substring
+        date = files[f][45:53]
+        if not date in date_dict:
+            date_dict[date] = []
+        date_dict[date].append(os.path.join(abs_path, files[f]))
+
+# sort all files by date
+dates = sorted(date_dict)
+date_format = '%Y%m%d'
+groups = []
+for i in range(0, len(dates)):
+    d = datetime.strptime(dates[i], date_format)
+    if i == 0:
+        # append groups with a list of filenames
+        groups.append(date_dict[dates[i]])
+    if i < (len(dates)-1):
+        dnext = datetime.strptime(dates[i+1], date_format)
+        diff = dnext - d
+        if diff.days < 2:
+            groups[-1] += date_dict[dates[i+1]]
+        else:
+            groups.append(date_dict[dates[i+1]])
+
+output = ''
+for x in range(0, len(groups)):
+    fls = ' '.join(groups[x]) + '\n'
+    output += fls
+print output

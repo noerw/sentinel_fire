@@ -1,55 +1,65 @@
 #!/bin/bash
 
-# arguments: <INDIR> <OUTDIR> <INPUTDATE yyyy-mm-dd> e.g ~/sentinel2/myanmar ~/Data/ChangeDetection 2017-05-05
-
 # all outputs can be found in /OUTDIR/log.txt
-# creates a .tiff named INDIR_INPUTDATE.tiff
-# also returns the path to that .tiff file in console
+# creates a .tif named INPUTDATE_l2a.tif
+# also returns the path to that .tif file in console
 
-# [ ] weird error while creating the tiff: "Warning 1: Unable to export GeoTIFF file with different datatypes per different bands. All bands should have the same types in TIFF."
+# [ ] weird error while creating the tif: "Warning 1: Unable to export GeoTIFF file with different datatypes per different bands. All bands should have the same types in TIFF."
 #     but works anyway
 
-# check whether enough arguments given
-if [ "$3" = "" ]
-then echo "not enough arguments given"
-     echo "usage : <INDIR> <OUTDIR> <INPUTDATE YYYY-MM-DD>"
-exit
-fi
+INDIR=''
+OUTDIR=''
+AOI=''
 
-INDIR=$1
-OUTDIR=$2
-INPUTDATE=$3
-
-# function that searches INDIR for valid tiles
-checkfolder () {
-  IN=$(date -d $1)
-  PLUS=$(date -d "$1+1 days")
-  MINUS=$(date -d "$1-1 days")
-  # extract date from folder
-  PRODUCTLIST=`find $2 -name "*L2A*" -path "*.SAFE"`
-  for PRODUCT in $PRODUCTLIST
-  do
-  NAME=$(basename ${PRODUCT})
-  DATE=`date -d ${NAME:11:8}`
-  if [ "$DATE" = "$PLUS" ] || [ "$DATE" = "$MINUS" ] || [ "$DATE" = "$IN" ]
-  then echo $PRODUCT
-  fi
-  done
-}
+while test $# -gt 0; do
+  case "$1" in
+    -h|--help)
+      echo "s2_clip - sentinel 2 change detection stitching and clipping"
+      echo " "
+      echo "s2_clip [options]"
+      echo " "
+      echo "options:"
+      echo "-h, --help                show brief help."
+      echo "-a, --aoi                 area of interest as geojson polygon geometry json file. Required."
+      echo "-i, --input               space separated list of paths to input files. Required."
+      echo "-o, --outputdir           path to output directory. Required."
+      exit 0
+      ;;
+    -i|--input)
+      shift
+      INDIR=$1
+      shift
+      while [[ ! ${1:0:1} == "-" ]] && [[ ! -z $1 ]];
+      do
+        INDIR="$INDIR $1"
+        shift
+      done
+      ;;
+    -o|--outputdir)
+      shift
+      OUTDIR=$1
+      shift
+      ;;
+    -a|--aoi)
+      shift
+      AOI=$1
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 
 # check whether input directories & date exist
-if [ ! -d "$INDIR" ]
- then echo "input directory doesn't exist!"
-  exit
-fi
 
 if [ ! -d "$OUTDIR" ]
- then echo "output directory doesn't exist!"
+  then echo "output directory doesn't exist!"
   exit
 fi
 
-if [ ! "`date '+%Y-%m-%d' -d $INPUTDATE 2>/dev/null`" = "$INPUTDATE" ]
- then echo "$INPUTDATE is not a valid YYYY-MM-DD date"
+if [ ! -f "$AOI" ]
+  then echo "aoi file does not exist"
   exit
 fi
 
@@ -67,8 +77,7 @@ vrtlist=$OUTDIR/vrt_$timestamp.txt
 touch $vrtlist
 
 # call checkfolder to create list of tiles with matching date +-1 day
-TILELIST=`checkfolder $INPUTDATE $INDIR` 1>> $log 2>> $log
-
+TILELIST=$INDIR
 # if TILELIST isn't empty
 if [ "$TILELIST" != "" ]
  then l2a_tiles=$TILELIST
@@ -79,29 +88,40 @@ fi
 # for every tile, do
 for tile in $l2a_tiles
 do
-tilename=$(basename ${tile})
-outtilename=$OUTDIR/$tilename
-echo "-working on $tilename" >> $log
-
-# filter for bands that we need
-# bandlist is empty when folder doesn't contain an IMG_DATA directory
-bandlist=`find $tile -path '*IMG_DATA*.jp2' -type f ! -name *AOT* ! -name *WVP* ! -name *TCP* ! -name *TCI_20* ! -name *TCI_60* ! -name *SCL* ! -name *B02_20* ! -name *B03_20* ! -name *B04_20* ! -name *B02_60* ! -name *B03_60* ! -name *B04_60* ! -name *B05_60* ! -name *B06_60* ! -name *B07_60* ! -name *B09_60* ! -name *B11_60* ! -name *B12_60* ! -name *B8A_60* | sort`
-
-# build vrt for every tile, write name to $vrtlist for clipping function
-gdalbuildvrt -separate -resolution highest -overwrite $outtilename.vrt $bandlist 1>> $log 2>> $log
-echo $outtilename.vrt >> $vrtlist
+  tilename=$(basename ${tile})
+  outtilename=$OUTDIR/$tilename
+  echo "-working on $tilename" >> $log
+  
+  # filter for bands that we need
+  # bandlist is empty when folder doesn't contain an IMG_DATA directory
+  bandlist=`find $tile -path '*IMG_DATA*.jp2' -type f ! -name *AOT* ! -name *WVP* ! -name *TCP* ! -name *TCI_20* ! -name *TCI_60* ! -name *SCL* ! -name *B02_20* ! -name *B03_20* ! -name *B04_20* ! -name *B02_60* ! -name *B03_60* ! -name *B04_60* ! -name *B05_60* ! -name *B06_60* ! -name *B07_60* ! -name *B09_60* ! -name *B11_60* ! -name *B12_60* ! -name *B8A_60* | sort`
+  
+  # build vrt for every tile, write name to $vrtlist for clipping function
+  gdalbuildvrt -separate -resolution highest -overwrite $outtilename.vrt $bandlist 1>> $log 2>> $log
+  echo $outtilename.vrt >> $vrtlist
 done
 echo "done with tiles" >> $log
 
-# clip all tiles together
-echo "starting clipping" >> $log
-TIFFNAME=`date '+%Y-%m-%d' -d $INPUTDATE 2>/dev/null`
-gdalbuildvrt -resolution highest -input_file_list $vrtlist -overwrite $OUTDIR/$(basename ${INDIR})_$TIFFNAME.vrt 1>> $log 2>> $log
-
 # output tiff is named inputfolder_inputdate.tiff
-gdal_translate -of GTiff $OUTDIR/$(basename ${INDIR})_$TIFFNAME.vrt $OUTDIR/$(basename ${INDIR})_$TIFFNAME.tiff 1>> $log 2>> $log
+DATE=$(basename ${l2a_tiles%% *})
+TIFFNAME=${DATE:45:8}
+stitchedpath="${OUTDIR}/${TIFFNAME}_l2a"
+
+# Stitching
+echo "start stitching" >> $log
+gdalbuildvrt -resolution highest -input_file_list $vrtlist -overwrite $stitchedpath.vrt 1>> $log 2>> $log
+gdal_translate -of GTiff $stitchedpath.vrt ${stitchedpath}_tmp.tif 1>> $log 2>> $log
+echo "done\n" >> $log
+
+# CLIP image
+echo "start clipping" >> $log
+gdalwarp -dstnodata 0 -crop_to_cutline -cutline $AOI ${stitchedpath}_tmp.tif $stitchedpath.tif 1>> $log 2>> $log
 echo done >> $log
 echo "" >> $log
-echo `find $OUTDIR -name "$(basename ${INDIR})_$TIFFNAME.tiff"`
-# delete vrtlist
+
+# cleanup
 rm $vrtlist
+rm ${stitchedpath}_tmp.tif
+
+# output required for pipeline
+echo $stitchedpath.tif

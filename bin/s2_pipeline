@@ -26,7 +26,7 @@ while test $# -gt 0; do
       echo " "
       echo "options:"
       echo "-h, --help                show brief help."
-      echo "-a, --aoi                 area of interest as geojson polygon geometry. Required."
+      echo "-a, --aoi                 area of interest as geojson polygon geometry json file. Required."
       echo "-s, --start               start date 'YYYYMMDD' or 'NOW-XDAYS'. Default 'NOW-5DAYS'."
       echo "-e, --end                 end date 'YYYYMMDD' or 'NOW-XDAYS'. Default 'NOW'."
       echo "-o, --outdir              path to output directory. Defaults to directory where the script was executed."
@@ -36,6 +36,7 @@ while test $# -gt 0; do
     -a|--aoi)
       shift
       aoi=$1
+      aoistring=$(cat $aoi)
       shift
       ;;
     -s|--start)
@@ -94,15 +95,19 @@ mkdir -p $outdir/data
 # - filter L1C tiles to apply correction to
 # - apply athmospheric correction (sen2cor) to L1C tiles
 
-$SCRIPTDIR/s2_query --aoi "$aoi" --startdate "$startdate" --enddate "$enddate" --cloud "$cloud" --processed-dir $outdir/data |
+$SCRIPTDIR/s2_query --aoi "$aoistring" --startdate "$startdate" --enddate "$enddate" --cloud "$cloud" --processed-dir $outdir/data |
   xargs -L1 -P2 $SCRIPTDIR/s2_download $outdir/data |
   grep 'MSIL1C' | # only L1C products need to be processed. TODO: also skip for already existing L2A
   xargs -L1 -P$sen2cor_instances $sen2cor_bin --resolution $sen2cor_res
 
+
 # wait for all previous steps to complete, as we need /all/ images for merging, then start second pipeline:
+$SCRIPTDIR/s2_grouporbit --input $outdir/data/ | 
+  xargs -L1 -P2 $SCRIPTDIR/s2_clip --aoi $aoi --outputdir $outdir/data --input
 # - combine bands of each tile into .vrt files
 # - join/stitch images of the same orbit
 # - clip to AoI
+
 
 # TODO
 # resulting clipped tif should be named $DATE_l2a.tif
