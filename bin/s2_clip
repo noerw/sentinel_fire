@@ -21,7 +21,7 @@ while test $# -gt 0; do
       echo "options:"
       echo "-h, --help                show brief help."
       echo "-a, --aoi                 area of interest as geojson polygon geometry json file. Required."
-      echo "-i, --input          space separated list of paths to input files. Required."
+      echo "-i, --input               space separated list of paths to input files. Required."
       echo "-o, --outputdir           path to output directory. Required."
       exit 0
       ;;
