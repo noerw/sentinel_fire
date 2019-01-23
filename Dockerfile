@@ -16,18 +16,13 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
 # install R dependencies
-# RUN Rscript -e 'install.packages("raster")'
+RUN Rscript -e 'install.packages("raster")'
 
 # install our code
 COPY . .
 
-#ENV PATH="/app/bin:/app/bin/sen2cor/bin:${PATH}"
-#ENV S2_USER
-#ENV S2_PASS
-#ENV S2_AOI
-#ENV S2_START
-#ENV S2_END
-#ENV S2_OUTDIR
-#ENV S2_CLOUDCOVERAGE
+# yes, i know.
+ENV S2_USER norwin
+ENV S2_PASS duDIdu43da51
 
-CMD ["bin/s2_pipeline", "-a", "${S2_AOI}", "-s", "${S2_START}", "-e", "${S2_END}", "-o", "${S2_OUTDIR}", "-c", "${S2_CLOUDCOVERAGE}"]
+CMD ["bin/s2_pipeline", "--help"]
