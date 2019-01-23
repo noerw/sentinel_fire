@@ -68,6 +68,7 @@ done
 function parallelism {
   # checks the available memory, and returns the number of instances that can be
   # launched in parallel for a given amount of required RAM (maximum: no. cpu cores)
+  # does not work on MacOS!
   mb_required=$1
   mem_instances=`awk '/MemAvailable/ { print int($2 / 1024 / '$mb_required') }' /proc/meminfo`
   cpu_instances=`< /proc/cpuinfo awk '/cpu cores/ { print $4 }' | uniq`
@@ -75,10 +76,7 @@ function parallelism {
 }
 
 SCRIPTDIR=${BASH_SOURCE%/*}
-sen2cor_bin="$SCRIPTDIR/sen2cor/bin/L2A_Process"
-sen2cor_res=60
-
-sen2cor_instances=`parallelism 5000`
+sen2cor_instances=2 # `parallelism 5000`
 
 if [ "$sen2cor_instances" -eq "0" ]; then
   echo "not enough memory to do sen2cor preprocessing!";
@@ -98,11 +96,11 @@ mkdir -p $outdir/data
 $SCRIPTDIR/s2_query --aoi "$aoistring" --startdate "$startdate" --enddate "$enddate" --cloud "$cloud" --processed-dir $outdir/data |
   xargs -L1 -P2 $SCRIPTDIR/s2_download $outdir/data |
   grep 'MSIL1C' | # only L1C products need to be processed. TODO: also skip for already existing L2A
-  xargs -L1 -P$sen2cor_instances $sen2cor_bin --resolution $sen2cor_res
+  xargs -L1 -P$sen2cor_instances $SCRIPTDIR/s2_preprocess
 
 
 # wait for all previous steps to complete, as we need /all/ images for merging, then start second pipeline:
-$SCRIPTDIR/s2_grouporbit --input $outdir/data/ | 
+$SCRIPTDIR/s2_grouporbit --input $outdir/data/ |
   xargs -L1 -P2 $SCRIPTDIR/s2_clip --aoi $aoi --outputdir $outdir/data --input
 # - combine bands of each tile into .vrt files
 # - join/stitch images of the same orbit
