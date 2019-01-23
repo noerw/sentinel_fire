@@ -13,6 +13,7 @@ startdate='NOW-5DAYS'
 enddate='NOW'
 cloud='20'
 outdir="$PWD"
+cleanup=''
 export S2_USER
 export S2_PASS
 
@@ -31,6 +32,7 @@ while test $# -gt 0; do
       echo "-e, --end                 end date 'YYYYMMDD' or 'NOW-XDAYS'. Default 'NOW'."
       echo "-o, --outdir              path to output directory. Defaults to directory where the script was executed."
       echo "-c, --cloudcoverage       maximum percentage of allowed cloud coverage. Default '20'."
+      echo "    --cleanup             remove intermediate results after processing"
       exit 0
       ;;
     -a|--aoi)
@@ -59,11 +61,20 @@ while test $# -gt 0; do
       cloud=$1
       shift
       ;;
+    --cleanup)
+      cleanup=true
+      shift
+      ;;
     *)
       break
       ;;
   esac
 done
+
+if [ -z $aoi ]; then
+  echo "flag --aoi is required!"
+  exit 1
+fi
 
 function parallelism {
   # checks the available memory, and returns the number of instances that can be
@@ -75,7 +86,6 @@ function parallelism {
   echo -e "$cpu_instances\n$mem_instances" | sort | head -n1 # minimum of cores & ram
 }
 
-SCRIPTDIR=${BASH_SOURCE%/*}
 sen2cor_instances=2 # `parallelism 5000`
 
 if [ "$sen2cor_instances" -eq "0" ]; then
@@ -83,6 +93,7 @@ if [ "$sen2cor_instances" -eq "0" ]; then
   exit 1;
 fi
 
+SCRIPTDIR=${BASH_SOURCE%/*}
 mkdir -p $outdir/data
 
 # using bash pipes and xargs gives us smart parallelism, all without Apache Storm, Spark,
@@ -98,23 +109,17 @@ $SCRIPTDIR/s2_query --aoi "$aoistring" --startdate "$startdate" --enddate "$endd
   grep 'MSIL1C' | # only L1C products need to be processed. TODO: also skip for already existing L2A
   xargs -L1 -P$sen2cor_instances $SCRIPTDIR/s2_preprocess
 
-
 # wait for all previous steps to complete, as we need /all/ images for merging, then start second pipeline:
 $SCRIPTDIR/s2_grouporbit --input $outdir/data/ |
   xargs -L1 -P2 $SCRIPTDIR/s2_clip --aoi $aoi --outputdir $outdir/data --input
-# - combine bands of each tile into .vrt files
-# - join/stitch images of the same orbit
-# - clip to AoI
 
-
-# TODO
-# resulting clipped tif should be named $DATE_l2a.tif
-# resulting changedetection tif should be named $DATE_dnbr.tif
+# create visualization
+$SCRIPTDIR/s2_visualize $outdir/data $aoistring
 
 # clean up intermediate files
-rm -rf $outdir/data/{*MSIL1C*,*MSIL2A*,*.vrt,*.zip}
+if [ ! -z $cleanup ]; then
+  rm -rf $outdir/data/{*MSIL1C*,*MSIL2A*,*.vrt,*.zip}
+fi
 
-# (re-) create the visualization from template
-mkdir $outdir/html
 
 # TODO

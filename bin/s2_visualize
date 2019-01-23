@@ -24,7 +24,7 @@ def listDirectory(directory, listType = 'file', recursive = True):
 parser = argparse.ArgumentParser()
 parser.add_argument('indir', type = str, help = 'directory to retrieve the input files from')
 parser.add_argument('aoi', type = str, help = 'area of interest geojson string')
-parser.add_argument('--filepattern', help = 'RegEx pattern to use to match input files', default = '.*_dnbr.tif$')
+parser.add_argument('--filepattern', help = 'RegEx pattern to use to match input files', default = '.*_dnbr\.tif$')
 parser.add_argument('--template', help = 'Template to use for visualization generation', default = 'leaflet_villages')
 args = parser.parse_args()
 
