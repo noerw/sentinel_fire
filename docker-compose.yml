@@ -1,6 +1,6 @@
 version: "2"
 services:
-  sen2r:
+  s2:
     build: .
     volumes:
       - ./data:/app/data
