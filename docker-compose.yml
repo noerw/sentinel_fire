@@ -1,20 +1,14 @@
 version: "2"
 services:
-  sen2r:
-    image: noerw/sentinel_fire:latest
+  s2:
+    build: .
     volumes:
       - ./data:/app/data
-    environment:
-      - S2_USER
-      - S2_PASS
-      - S2_AOI
-      - S2_START
-      - S2_END
-      - S2_OUTDIR
-      - S2_CLOUDCOVERAGE
 
   s2_monitor:
-    build: ./Dockerfile.monitoring
+    build:
+      dockerfile: Dockerfile.monitoring
+      context: .
     volumes:
       - ./data:/app/data
     environment:

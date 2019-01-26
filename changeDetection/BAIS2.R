@@ -3,19 +3,6 @@ rm(list=ls())
 
 # ------------------------ Libraries ------------------------ 
 
-library(rgdal)
-if (!require(geojsonio)) {
-  install.packages("geojsonio")
-  library(geojsonio)
-}
-library(sp)
-library(raster)
-library(maps)
-library(ggmap)
-library(maptools)
-library(mapview)
-library(RColorBrewer)
-library(NISTunits)
 library(raster)
 
 # ------------------------ Function definition ------------------------ 
@@ -34,9 +21,9 @@ Band05  = raster(R20m_file,band = 5)
 Band06  = raster(R20m_file,band = 6)
 Band07  = raster(R20m_file,band = 7)
 Band08  = raster(R20m_file,band = 8)
-Band8A  = raster(R20m_file,band = 9)#10
-Band11  = raster(R20m_file,band = 8)
-Band12  = raster(R20m_file,band = 9)
+Band8A  = raster(R20m_file,band = 10)#10
+Band11  = raster(R20m_file,band = 11)
+Band12  = raster(R20m_file,band = 12)
 
 #Burned Area Index for Sentinel-2 (BAIS2)
 BAIS2 <- (1- sqrt((Band06*Band07*Band8A)/Band04) * 
@@ -48,14 +35,24 @@ BAIS2 <- (1- sqrt((Band06*Band07*Band8A)/Band04) *
 limits <- summary(BAIS2)
 
 #reclassify the result
-BAIS2 <- reclassify(BAIS2, c( limits[1] , limits[2], -1  , 
-                              limits[2] , limits[3], -0.6,
-                              limits[3] , limits[4],  0  ,
-                              limits[4] , limits[5],  0.75))
+BAIS2 <- reclassify(BAIS2, c( limits[1] , limits[2], 0.25  , 
+                              limits[2] , limits[3], 0.5   ,
+                              limits[3] , limits[4], 0.75  ,
+                              limits[4] , limits[5], 0.1))
+
+# ------------------------ Detect Water ------------------------ #
+
+source("waterDetection.R")
+water <- detectWater(Image)
+
+# ------------------------ Delete Water ------------------------ #
+
+source("deleteWater.R")
+output <- deleteWater(BAIS2, water)
 
 # ------------------------ Output ------------------------ #
 
-result <- brick(BAIS2)
+result <- brick(output)
 writeRaster(result,outpath)
 
 cat(outpath)

@@ -19,9 +19,9 @@ logger.addHandler(logging.StreamHandler())
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--aoi", help="GeoJSON polygon of the required area", required = True)
-parser.add_argument("--startdate", help="YYYYMMDD", default='NOW-7DAYS')
+parser.add_argument("--startdate", help="YYYYMMDD", default='NOW-5DAYS')
 parser.add_argument("--enddate", help="YYYYMMDD", default='NOW')
-parser.add_argument("--cloud", help="maximum cloud cover percentage", default=100)
+parser.add_argument("--cloud", help="maximum cloud cover percentage", default=20)
 parser.add_argument("--user", help="Copernicus Apihub username", default='user')
 parser.add_argument("--password", help="Copernicus Apihub password", default='user')
 parser.add_argument("--processed-dir", help="directory containing the preprocessed files (to check cache)", default='./')
@@ -79,7 +79,7 @@ productDict = {i: p for i, p in enumerate(products)}
 
 logger.warn('%s scenes found with a total size of %.2f GB', len(productDict), api.get_products_size(productDict))
 
-def preprocessedName(product, liste = []):
+def preprocessedName(product):
     productDate = product['beginposition'].strftime('%Y%m%d')
     return '{}_l2a.tif'.format(productDate)
 
@@ -90,6 +90,7 @@ def isPreprocessed(product, folder = args.processed_dir):
 # which already have a preprocessed image.
 for p in products:
     if isPreprocessed(p):
+        logger.warn('skipping scene %s; it was already processed into %s', p['filename'], preprocessedName(p))
         continue
 
     print p['uuid']

@@ -91,11 +91,11 @@ do
   tilename=$(basename ${tile})
   outtilename=$OUTDIR/$tilename
   echo "-working on $tilename" >> $log
-  
+
   # filter for bands that we need
   # bandlist is empty when folder doesn't contain an IMG_DATA directory
   bandlist=`find $tile -path '*IMG_DATA*.jp2' -type f ! -name *AOT* ! -name *WVP* ! -name *TCP* ! -name *TCI_20* ! -name *TCI_60* ! -name *SCL* ! -name *B02_20* ! -name *B03_20* ! -name *B04_20* ! -name *B02_60* ! -name *B03_60* ! -name *B04_60* ! -name *B05_60* ! -name *B06_60* ! -name *B07_60* ! -name *B09_60* ! -name *B11_60* ! -name *B12_60* ! -name *B8A_60* | sort`
-  
+
   # build vrt for every tile, write name to $vrtlist for clipping function
   gdalbuildvrt -separate -resolution highest -overwrite $outtilename.vrt $bandlist 1>> $log 2>> $log
   echo $outtilename.vrt >> $vrtlist
@@ -115,13 +115,14 @@ echo "done\n" >> $log
 
 # CLIP image
 echo "start clipping" >> $log
-gdalwarp -dstnodata 0 -crop_to_cutline -cutline $AOI ${stitchedpath}_tmp.tif $stitchedpath.tif 1>> $log 2>> $log
+gdalwarp -dstnodata 0 -crop_to_cutline -cutline $AOI ${stitchedpath}_tmp.tif -overwrite $stitchedpath.tif 1>> $log 2>> $log
 echo done >> $log
 echo "" >> $log
 
 # cleanup
-rm $vrtlist
-rm ${stitchedpath}_tmp.tif
+xargs rm -f < $vrtlist
+rm -f $vrtlist ${stitchedpath}.vrt ${stitchedpath}_tmp.tif
+rm -f $log
 
 # output required for pipeline
 echo $stitchedpath.tif
