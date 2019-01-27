@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 import argparse
-import os
+from os import path
 from subprocess import Popen, PIPE
 import logging
 import sys
@@ -12,36 +12,44 @@ logger.addHandler(logging.StreamHandler())
 
 # argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--input", nargs="+", help="Input folder", required = True)
+parser.add_argument("-i", "--input", nargs="+", help="input S2 L2A orbit files", required = True)
 parser.add_argument("-o", "--outputdir", help="Output folder", required = True)
-parser.add_argument("-p", "--process", help="Select single process. Possible is 'dnbr' or 'bais2'. Defaults to both.")
+parser.add_argument("-p", "--process", help="Select single algorithm. Possible is 'dnbr' or 'bais2'.", default=["bais2", "dnbr"])
 args = parser.parse_args()
 
-in_files = args.input.sort()
-output = os.path.abspath(args.outputdir)
-scriptdir = os.path.abspath(os.path.dirname(__file__))
+in_files = args.input
+in_files.sort()
+out_dir = path.abspath(args.outputdir)
+scriptdir = path.abspath(path.dirname(__file__))
 
-default_processes = ["dnbr", "bais2"]
-process = ""
-if not args.process:
-    process = default_processes
-elif not any([p == args.process for p in default_processes]):
-    logger.critical("Invalid process. Only {} are allowed.".format(default_processes))
+processes_available = [
+    # 0 ID      1 executable                                                    2 resultsuffix  3 num of required input files
+    ("bais2",   path.abspath(path.join(scriptdir, "..", "changeDetection", "BAIS2.R")), "_bais2.tif",   1),
+    ("dnbr",    path.abspath(path.join(scriptdir, "..", "changeDetection", "dNBR.R")),  "_dnbr.tif",    2),
+]
+
+processes = [p for p in processes_available if p[0] in args.process]
+if not len(processes):
+    logger.critical("Invalid process. Only {} are allowed.".format([p[0] for p in processes_available]))
     sys.exit()
-else:
-    process = [args.process]
-
-pre = "Rscript --vanilla"
-processes = []
-processes.append(("bais2", os.path.abspath(os.path.join(scriptdir, "BAIS2.R")), "_bais2.tif", 1))
-processes.append(("dnbr", os.path.abspath(os.path.join(scriptdir, "dNBR.R")), "_dnbr.tif", 2))
 
 for i in range(0, len(in_files)):
-    for p in processes:
-        if any(p[0] == pr for pr in process):
-            fname = os.path.basename(in_files[i])[:-4] + p[2]
-            outputfile = os.path.join(output, fname)
-            cmd = pre + " " + p[1] + " " + outputfile + " " + os.path.abspath(in_files[i])
-            if (i < len(in_files)-1) and (p[3] == 2):
-                cmd += " " + os.path.abspath(in_files[i+1])
-            Popen(cmd, stdout=PIPE, shell=True))
+    for process_id, script, suffix, inputs_required in processes:
+        if len(in_files) < inputs_required:
+            logger.warn("not enough input files for {}; skipping!".format(process_id))
+            continue
+
+        fname = path.basename(in_files[i]).replace('.tif', suffix)
+        outfile = path.join(out_dir, fname)
+        infile = path.abspath(in_files[i])
+
+        cmd = "Rscript --vanilla {} {} {}".format(script, outfile, infile)
+        if (i < len(in_files) - 1) and (inputs_required == 2):
+            cmd += " " + path.abspath(in_files[i+1])
+
+        out = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=path.dirname(script))
+        stdout, stderr = out.communicate()
+        # logger.warn(stdout) # DEBUG: rscript also puts errors to stdout
+        # if stderr:
+        #     logger.critical(stderr)
+        #     sys.exit(1)
