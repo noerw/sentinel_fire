@@ -93,7 +93,7 @@ mkdir -p $outdir/data
 # using bash pipes and xargs gives us smart parallelism, all without Apache Storm, Spark,
 # Hadoop or whatever! (who needs replayability, just start the pipe again, completed work is cached)
 
-echo -e "====> pipeline 1/3: download & preprocessing\n"
+echo -e "====> pipeline 1/4: download & preprocessing\n"
 # first pipeline:
 # - download two in parallel (API limitation)
 # - filter L1C tiles to apply correction to
@@ -105,17 +105,22 @@ $SCRIPTDIR/s2_query --aoi "$aoistring" --startdate "$startdate" --enddate "$endd
 
 # wait for all previous steps to complete, as we need /all/ images for merging, then start second pipeline:
 
-echo -e "\n====> pipeline 2/3: orbit tile stitching & change detection\n"
+echo -e "\n====> pipeline 2/4: orbit tile stitching\n"
 # second pipeline:
-# - TODO
-# - TODO
-$SCRIPTDIR/s2_grouporbit --input $outdir/data/ |
-  xargs -r -L1 -P2 $SCRIPTDIR/s2_clip --aoi "$aoi" --outputdir "$outdir/data" --input
+# - combine bands of each tile into .vrt files
+# - join/stitch images of the same orbit
+# - clip to AoI
+tiffs=`$SCRIPTDIR/s2_grouporbit --input $outdir/data/ |
+  xargs -r -L1 -P2 $SCRIPTDIR/s2_clip --aoi "$aoi" --outputdir "$outdir/data" --input`
 
-echo -e "\n====> pipeline 3/3: web visualization\n"
-# third pipeline:
-# - TODO
-# - TODO
+# wait for completion again, as we need to compare two adjacent images each.
+
+echo -e "\n====> pipeline 3/4: change detection\n"
+# calling change detection script(s)
+$SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data"
+
+echo -e "\n====> pipeline 3/4: web visualization\n"
+# create web visualization at last
 $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_l2a\.tif$"
 
 # clean up intermediate files
