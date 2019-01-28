@@ -36,20 +36,30 @@ if not len(processes):
 for i in range(0, len(in_files)):
     for process_id, script, suffix, inputs_required in processes:
         if len(in_files) < inputs_required:
-            logger.warn("not enough input files for {}; skipping!".format(process_id))
+            logger.warn("Not enough input files for {}; skipping!".format(process_id))
             continue
 
         fname = path.basename(in_files[i]).replace('.tif', suffix)
         outfile = path.join(out_dir, fname)
         infile = path.abspath(in_files[i])
+        # check if output file already exists. If so, skip loop
+        if path.isfile(outfile):
+            logger.warn("{} already exists. Skipping change detection.".format(outfile))
+            continue
 
         cmd = "Rscript --vanilla {} {} {}".format(script, outfile, infile)
         if (i < len(in_files) - 1) and (inputs_required == 2):
             cmd += " " + path.abspath(in_files[i+1])
-
+        elif (i == len(in_files) - 1) and (inputs_required == 2):
+            print "Not enough input files for {}; skipping!".format(process_id)
+            continue
+        print "Running script {} with outfile {} and infile {}".format(script, outfile, infile)
+        # temporary solution until default threshold value is fixed in dNBR.R
+        #if process_id == "dnbr":
+            #cmd += " FALSE"
         out = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=path.dirname(script))
         stdout, stderr = out.communicate()
-        # logger.warn(stdout) # DEBUG: rscript also puts errors to stdout
-        # if stderr:
-        #     logger.critical(stderr)
-        #     sys.exit(1)
+        logger.warn(stdout) # DEBUG: rscript also puts errors to stdout
+        if stderr:
+            logger.critical(stderr)
+            sys.exit(1)

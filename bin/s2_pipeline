@@ -119,7 +119,7 @@ echo -e "\n====> pipeline 3/4: change detection\n"
 # calling change detection script(s)
 $SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data"
 
-echo -e "\n====> pipeline 3/4: web visualization\n"
+echo -e "\n====> pipeline 4/4: web visualization\n"
 # create web visualization at last
 $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_l2a\.tif$"
 
