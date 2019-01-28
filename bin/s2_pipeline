@@ -121,7 +121,7 @@ $SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data"
 
 echo -e "\n====> pipeline 4/4: web visualization\n"
 # create web visualization at last
-$SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_l2a\.tif$"
+$SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_(l2a|dnbr|bais2)\.tif$"
 
 # clean up intermediate files
 if [ ! -z $cleanup ]; then
