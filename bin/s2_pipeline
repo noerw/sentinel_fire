@@ -159,7 +159,7 @@ fi
 # clean up intermediate files
 if [ ! -z $cleanup ]; then
   echo -e "\n====> cleanup of intermediate files"
-  rm -rf $outdir/data/{*MSIL1C*,*MSIL2A*,*.vrt,*.zip}
+  rm -rf $outdir/data/{*.SAFE,*.zip}
 fi
 
 echo -e "\n====> done!"
