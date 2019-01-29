@@ -3,6 +3,7 @@
 set -e
 
 aoi=''
+algorithm=''
 startdate='NOW-5DAYS'
 enddate='NOW'
 cloud='20'
@@ -22,6 +23,7 @@ while test $# -gt 0; do
       echo "options:"
       echo "-h, --help                show brief help."
       echo "-a, --aoi                 area of interest as geojson polygon geometry json file. Required."
+      echo "--algorithm               select single algorithm. Possible is 'dnbr' or 'bais2'. Defaults to both."
       echo "-s, --start               start date 'YYYYMMDD' or 'NOW-XDAYS'. Default 'NOW-5DAYS'."
       echo "-e, --end                 end date 'YYYYMMDD' or 'NOW-XDAYS'. Default 'NOW'."
       echo "-o, --outdir              path to output directory. Defaults to directory where the script was executed."
@@ -33,6 +35,11 @@ while test $# -gt 0; do
       shift
       aoi=$1
       aoistring=$(cat $aoi)
+      shift
+      ;;
+    --algorithm)
+      shift
+      algorithm=$1
       shift
       ;;
     -s|--start)
@@ -126,7 +133,13 @@ tiffs=`$SCRIPTDIR/s2_grouporbit --input $outdir/data/ |
 
 echo -e "\n====> pipeline 3/4: change detection\n"
 # calling change detection script(s)
-$SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data"
+# add --algorithm flag if it was defined
+if [ ! -z $algorithm ]
+  then
+    $SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data" --process $algorithm
+  else
+    $SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data"
+fi
 
 echo -e "\n====> pipeline 4/4: web visualization\n"
 # create web visualization at last
