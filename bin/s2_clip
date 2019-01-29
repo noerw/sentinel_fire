@@ -97,6 +97,17 @@ if [ -f "${stitchedpath}.tif" ]; then
   exit
 fi
 
+function cleanup {
+  # cleanup
+  #xargs rm -f < $vrtlist
+  #rm -f $vrtlist ${stitchedpath}.vrt ${stitchedpath}_tmp.tif
+  #rm -f $log
+  xargs rm -f < $1
+  rm -f $1 ${2}.vrt ${2}_tmp.tif
+  rm -f $3
+}
+trap cleanup $vrtlist $stitchedpath $log
+
 # for every tile, do
 for tile in $l2a_tiles
 do
@@ -114,7 +125,6 @@ do
 done
 echo "done with tiles" >> $log
 
-
 # Stitching
 echo "start stitching" >> $log
 echo "stitching `cat $vrtlist`..." 1>&2
@@ -128,11 +138,6 @@ echo "clipping $stitchedpath.vrt..." 1>&2
 gdalwarp -dstnodata 0 -crop_to_cutline -cutline $AOI ${stitchedpath}_tmp.tif -overwrite $stitchedpath.tif 1>> $log 2>> $log
 echo done >> $log
 echo "" >> $log
-
-# cleanup
-xargs rm -f < $vrtlist
-rm -f $vrtlist ${stitchedpath}.vrt ${stitchedpath}_tmp.tif
-rm -f $log
 
 # output required for pipeline
 echo $stitchedpath.tif
