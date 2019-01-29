@@ -44,22 +44,30 @@ for i in range(0, len(in_files)):
         infile = path.abspath(in_files[i])
         # check if output file already exists. If so, skip loop
         if path.isfile(outfile):
-            logger.warn("{} already exists. Skipping change detection.".format(outfile))
+            logger.warn("{} already exists. Skipping {}.".format(outfile, process_id))
             continue
 
-        cmd = "Rscript --vanilla {} {} {}".format(script, outfile, infile)
-        if (i < len(in_files) - 1) and (inputs_required == 2):
-            cmd += " " + path.abspath(in_files[i+1])
-        elif (i == len(in_files) - 1) and (inputs_required == 2):
+        cmd = "Rscript --vanilla {} {}".format(script, outfile)
+
+        # adding input files to cmd
+        restfiles = len(in_files) - i
+        if (restfiles >= inputs_required):
+            print "Running {} with:".format(process_id)
+            for j in range(0, inputs_required):
+                cmd += " " + path.abspath(in_files[i+j])
+                print "    {}".format(in_files[i+j])
+            print "    Saving to {}".format(outfile)
+        else:
             print "Not enough input files for {}; skipping!".format(process_id)
             continue
-        print "Running script {} with outfile {} and infile {}".format(script, outfile, infile)
+
+        # TODO
         # temporary solution until default threshold value is fixed in dNBR.R
-        #if process_id == "dnbr":
-            #cmd += " FALSE"
+        if process_id == "dnbr":
+            cmd += " FALSE"
         out = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, cwd=path.dirname(script))
         stdout, stderr = out.communicate()
         logger.warn(stdout) # DEBUG: rscript also puts errors to stdout
         if stderr:
             logger.critical(stderr)
-            sys.exit(1)
+            #sys.exit(1)
