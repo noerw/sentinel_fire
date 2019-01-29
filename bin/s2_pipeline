@@ -3,6 +3,7 @@
 set -e
 
 aoi=''
+algorithm=''
 startdate='NOW-5DAYS'
 enddate='NOW'
 cloud='20'
@@ -22,6 +23,7 @@ while test $# -gt 0; do
       echo "options:"
       echo "-h, --help                show brief help."
       echo "-a, --aoi                 area of interest as geojson polygon geometry json file. Required."
+      echo "--algorithm               select single algorithm. Possible is 'dnbr' or 'bais2'. Defaults to both."
       echo "-s, --start               start date 'YYYYMMDD' or 'NOW-XDAYS'. Default 'NOW-5DAYS'."
       echo "-e, --end                 end date 'YYYYMMDD' or 'NOW-XDAYS'. Default 'NOW'."
       echo "-o, --outdir              path to output directory. Defaults to directory where the script was executed."
@@ -33,6 +35,11 @@ while test $# -gt 0; do
       shift
       aoi=$1
       aoistring=$(cat $aoi)
+      shift
+      ;;
+    --algorithm)
+      shift
+      algorithm=$1
       shift
       ;;
     -s|--start)
@@ -80,6 +87,15 @@ function parallelism {
   echo -e "$cpu_instances\n$mem_instances" | sort | head -n1 # minimum of cores & ram
 }
 
+function filesexist {
+ # if [ ! -z $(find $outdir/data/ -maxdepth 1 -name $1) ]; then
+  if [ ! -z "$(find $outdir/data/ -maxdepth 1 -name $1)" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 sen2cor_instances=2 # `parallelism 5000`
 
 if [ "$sen2cor_instances" -eq "0" ]; then
@@ -117,16 +133,33 @@ tiffs=`$SCRIPTDIR/s2_grouporbit --input $outdir/data/ |
 
 echo -e "\n====> pipeline 3/4: change detection\n"
 # calling change detection script(s)
-$SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data"
+# add --algorithm flag if it was defined
+if [ ! -z $algorithm ]
+  then
+    $SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data" --process $algorithm
+  else
+    $SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data"
+fi
 
-echo -e "\n====> pipeline 3/4: web visualization\n"
+echo -e "\n====> pipeline 4/4: web visualization\n"
 # create web visualization at last
-$SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_l2a\.tif$"
+# always checks if files with matching suffix exist
+if filesexist '*_bais2.tif'; then
+  $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_bais2\.tif$" --outfile "viz_bais2.html" &
+fi
+
+if filesexist '*_dnbr.tif'; then
+  $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_dnbr\.tif$" --outfile "viz_dnbr.html" &
+fi
+
+if filesexist '*_l2a.tif'; then
+  $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_l2a\.tif$" --outfile "viz_l2a.html"
+fi
 
 # clean up intermediate files
 if [ ! -z $cleanup ]; then
   echo -e "\n====> cleanup of intermediate files"
-  rm -rf $outdir/data/{*MSIL1C*,*MSIL2A*,*.vrt,*.zip}
+  rm -rf $outdir/data/{*.SAFE,*.zip}
 fi
 
 echo -e "\n====> done!"

@@ -26,6 +26,7 @@ parser.add_argument('indir', type = str, help = 'directory to retrieve the input
 parser.add_argument('aoi', type = str, help = 'area of interest geojson string')
 parser.add_argument('--filepattern', help = 'RegEx pattern to use to match input files', default = '.*_dnbr\.tif$')
 parser.add_argument('--template', help = 'Template to use for visualization generation', default = 'leaflet_villages')
+parser.add_argument('--outfile', help = 'Filename of the resulting visualization', default = 'visualization.html')
 args = parser.parse_args()
 
 # prepare area of interest (make sure it is a feature)
@@ -64,7 +65,7 @@ if not (templateFiles.get(args.template) and path.isfile(templateFiles[args.temp
 
 # read template, apply content, write result to <indir>/visualization.html
 with open(templateFiles[args.template], 'r') as templateFile:
-    outFile = path.join(args.indir, 'visualization.html')
+    outFile = path.join(args.indir, args.outfile)
     tifList = ','.join(['"./{}"'.format(path.basename(f)) for f in thumbs])
     template = templateFile.read()
     template = template.replace('%%AOI%%', aoi)

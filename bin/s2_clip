@@ -85,6 +85,27 @@ else echo "no matching tiles for that date ($INPUTDATE) found" 1>> $log 2>> $log
  exit
 fi
 
+# output tiff is named inputfolder_inputdate_l2a.tiff
+DATE=$(basename ${l2a_tiles%% *})
+TIFFNAME=${DATE:45:8}
+stitchedpath="${OUTDIR}/${TIFFNAME}_l2a"
+
+function cleanup {
+  # cleanup
+  echo "deleting $vrtlist" 1>&2
+  xargs rm -f < $vrtlist
+  rm -f $vrtlist ${stitchedpath}.vrt ${stitchedpath}_tmp.tif
+  rm -f $log
+}
+trap cleanup EXIT
+
+# check if file already exists. If so skip process
+if [ -f "${stitchedpath}.tif" ]; then
+  echo "${stitchedpath}.tif already exists. Skipping clipping." 1>&2
+  echo "${stitchedpath}.tif"
+  exit
+fi
+
 # for every tile, do
 for tile in $l2a_tiles
 do
@@ -102,27 +123,19 @@ do
 done
 echo "done with tiles" >> $log
 
-# output tiff is named inputfolder_inputdate.tiff
-DATE=$(basename ${l2a_tiles%% *})
-TIFFNAME=${DATE:45:8}
-stitchedpath="${OUTDIR}/${TIFFNAME}_l2a"
-
 # Stitching
 echo "start stitching" >> $log
+echo "stitching `cat $vrtlist`..." 1>&2
 gdalbuildvrt -resolution highest -input_file_list $vrtlist -overwrite $stitchedpath.vrt 1>> $log 2>> $log
 gdal_translate -of GTiff $stitchedpath.vrt ${stitchedpath}_tmp.tif 1>> $log 2>> $log
 echo "done\n" >> $log
 
 # CLIP image
 echo "start clipping" >> $log
+echo "clipping $stitchedpath.vrt..." 1>&2
 gdalwarp -dstnodata 0 -crop_to_cutline -cutline $AOI ${stitchedpath}_tmp.tif -overwrite $stitchedpath.tif 1>> $log 2>> $log
 echo done >> $log
 echo "" >> $log
-
-# cleanup
-xargs rm -f < $vrtlist
-rm -f $vrtlist ${stitchedpath}.vrt ${stitchedpath}_tmp.tif
-rm -f $log
 
 # output required for pipeline
 echo $stitchedpath.tif

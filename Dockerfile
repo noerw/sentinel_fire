@@ -3,7 +3,7 @@ FROM r-base
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y python2 python-pip gdal-bin file musl-dev && \
+    apt-get install -y python2 python-pip proj-bin libproj-dev libgdal-dev gdal-bin file musl-dev && \
     apt-get clean && apt-get autoremove -y
 
 # install Sen2Cor
@@ -16,7 +16,7 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
 # install R dependencies
-RUN Rscript -e 'install.packages("raster")'
+RUN Rscript -e 'install.packages(c("raster", "rgdal"))'
 
 # install our code
 COPY . .
