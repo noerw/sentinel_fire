@@ -90,23 +90,21 @@ DATE=$(basename ${l2a_tiles%% *})
 TIFFNAME=${DATE:45:8}
 stitchedpath="${OUTDIR}/${TIFFNAME}_l2a"
 
+function cleanup {
+  # cleanup
+  echo "deleting $vrtlist" 1>&2
+  xargs rm -f < $vrtlist
+  rm -f $vrtlist ${stitchedpath}.vrt ${stitchedpath}_tmp.tif
+  rm -f $log
+}
+trap cleanup EXIT
+
 # check if file already exists. If so skip process
 if [ -f "${stitchedpath}.tif" ]; then
   echo "${stitchedpath}.tif already exists. Skipping clipping." 1>&2
   echo "${stitchedpath}.tif"
   exit
 fi
-
-function cleanup {
-  # cleanup
-  #xargs rm -f < $vrtlist
-  #rm -f $vrtlist ${stitchedpath}.vrt ${stitchedpath}_tmp.tif
-  #rm -f $log
-  xargs rm -f < $1
-  rm -f $1 ${2}.vrt ${2}_tmp.tif
-  rm -f $3
-}
-trap cleanup $vrtlist $stitchedpath $log
 
 # for every tile, do
 for tile in $l2a_tiles
