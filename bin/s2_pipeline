@@ -144,16 +144,24 @@ fi
 echo -e "\n====> pipeline 4/4: web visualization\n"
 # create web visualization at last
 # always checks if files with matching suffix exist
+htmls=''
 if filesexist '*_bais2.tif'; then
   $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_bais2\.tif$" --outfile "viz_bais2.html" &
+  htmls="${htmls}bais2 "
 fi
 
 if filesexist '*_dnbr.tif'; then
   $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_dnbr\.tif$" --outfile "viz_dnbr.html" &
+  htmls="${htmls}dnbr "
 fi
 
 if filesexist '*_l2a.tif'; then
   $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_l2a\.tif$" --outfile "viz_l2a.html"
+  htmls="${htmls}l2a "
+fi
+
+if [ ! -z "$htmls" ]; then
+  $SCRIPTDIR/s2_visindex "$outdir/data" --htmls $htmls
 fi
 
 # clean up intermediate files

@@ -1,0 +1,41 @@
+#!/usr/bin/env python2
+
+import argparse
+import logging
+from os import path, walk
+import re
+from subprocess import Popen, PIPE
+
+# log to stderr. stdout is used for pipe communications!
+logger = logging.getLogger()
+logger.setLevel(logging.WARN)
+logger.addHandler(logging.StreamHandler())
+
+parser = argparse.ArgumentParser()
+parser.add_argument('indir', type = str, help = 'directory to retrieve the input files from')
+parser.add_argument('--htmls', nargs="*")
+parser.add_argument('--template', help = 'Template to use for visualization generation', default = 'index')
+parser.add_argument('--outfile', help = 'Filename of the resulting visualization', default = 'index.html')
+args = parser.parse_args()
+templateFiles = dict({
+    "index": path.abspath(path.dirname(__file__) + '/../visualization/index.html.template'),
+})
+htmls = args.htmls
+if not (templateFiles.get(args.template) and path.isfile(templateFiles[args.template])):
+    raise Exception('{} is not a valid template'.format(args.template))
+
+# read template, apply content, write result to <indir>/visualization.html
+with open(templateFiles[args.template], 'r') as templateFile:
+    outFile = path.join(args.indir, args.outfile)
+    template = templateFile.read()
+    for j in range(0, len(htmls)):
+        pre = "<li><a href='"
+        mid = "'>"
+        post = " map</a></li>"
+        templatestr = pre + path.join('.', 'viz_' + htmls[j] + '.html') + mid + htmls[j] + post
+        templatestr += "%%anchors%%"
+        template = template.replace('%%anchors%%', templatestr)
+    template = template.replace('%%anchors%%', '')
+    with open(outFile, 'w') as out:
+        out.write(template)
+    print outFile

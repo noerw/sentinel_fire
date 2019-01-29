@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+
+  <style>
+    html, body, #map {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+  </style>
+
+</head>
+
+<body>
+  <h1>Sentinel_fire</h1>
+  <!-- the variables below are inserted via %%templating%% -->
+  <ul id="outputs">
+    %%anchors%%
+  </ul>
+</body>
+</html>
