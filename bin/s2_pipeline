@@ -80,6 +80,15 @@ function parallelism {
   echo -e "$cpu_instances\n$mem_instances" | sort | head -n1 # minimum of cores & ram
 }
 
+function filesexist {
+ # if [ ! -z $(find $outdir/data/ -maxdepth 1 -name $1) ]; then
+  if [ ! -z "$(find $outdir/data/ -maxdepth 1 -name $1)" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 sen2cor_instances=2 # `parallelism 5000`
 
 if [ "$sen2cor_instances" -eq "0" ]; then
@@ -121,11 +130,17 @@ $SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data"
 
 echo -e "\n====> pipeline 4/4: web visualization\n"
 # create web visualization at last
-$SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_bais2\.tif$" --outfile "viz_bais2.html"
+# always checks if files with matching suffix exist
+if filesexist '*_bais2.tif'; then
+  $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_bais2\.tif$" --outfile "viz_bais2.html" &
+fi
 
-# dnbr only works if there are two input files, so we should check that
-if [ ! -z "$(find $outdir/data/ -maxdepth 1 -name '*_dnbr.tif')" ]; then
-  $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_dnbr\.tif$"  --outfile "viz_dnbr.html"
+if filesexist '*_dnbr.tif'; then
+  $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_dnbr\.tif$" --outfile "viz_dnbr.html" &
+fi
+
+if filesexist '*_l2a.tif'; then
+  $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_l2a\.tif$" --outfile "viz_l2a.html"
 fi
 
 # clean up intermediate files
