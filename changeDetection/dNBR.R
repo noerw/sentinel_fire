@@ -37,9 +37,9 @@ dNBR <- Before_NBR - After_NBR
 #reclassify with the classes from the paper
 outputdNBR <- reclassify(dNBR, c( -Inf  , -0.1, NA   , 
                                   -0.1  ,  0.1, NA   ,
-                                  0.1  ,  0.27, 0 ,
-                                  0.27,   0.66, 0.5,
-                                  0.66 ,  Inf , 1   ))
+                                  0.1  ,  0.27, 0 ,         #Low severety
+                                  0.27,   0.66, 0.5,        #Mid severety
+                                  0.66 ,  Inf , 1   ))      #High severety
 if(threshold == TRUE){
   outputdNBR[outputdNBR < 0.5 ] <- NA
 }
