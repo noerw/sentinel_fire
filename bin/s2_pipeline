@@ -49,7 +49,7 @@ while test $# -gt 0; do
       ;;
     -e|--end)
       shift
-      startdate=$1
+      enddate=$1
       shift
       ;;
     -o|--outdir)
