@@ -38,7 +38,7 @@ limits <- summary(BAIS2)
 BAIS2 <- reclassify(BAIS2, c( limits[1] , limits[2], 0.25  , 
                               limits[2] , limits[3], 0.5   ,
                               limits[3] , limits[4], 0.75  ,
-                              limits[4] , limits[5], 0.1))
+                              limits[4] , limits[5], 1))
 
 # ------------------------ Detect Water ------------------------ #
 
