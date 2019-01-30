@@ -80,11 +80,11 @@ fi
 function parallelism {
   # checks the available memory, and returns the number of instances that can be
   # launched in parallel for a given amount of required RAM (maximum: no. cpu cores)
-  # does not work on MacOS!
+  # only works on linux!
   mb_required=$1
   mem_instances=`awk '/MemAvailable/ { print int($2 / 1024 / '$mb_required') }' /proc/meminfo`
   cpu_instances=`< /proc/cpuinfo awk '/cpu cores/ { print $4 }' | uniq`
-  echo -e "$cpu_instances\n$mem_instances" | sort | head -n1 # minimum of cores & ram
+  echo -e "$cpu_instances\n$mem_instances" | sort -n | head -n1 # minimum of cores & ram
 }
 
 function filesexist {
@@ -96,7 +96,7 @@ function filesexist {
   fi
 }
 
-sen2cor_instances=2 # `parallelism 5000`
+sen2cor_instances=`parallelism 2900`
 
 if [ "$sen2cor_instances" -eq "0" ]; then
   echo "not enough memory to do sen2cor preprocessing!";
@@ -187,6 +187,8 @@ fi
 if [ ! -z "$htmls" ]; then
   $SCRIPTDIR/s2_visindex "$outdir/data" --htmls $htmls
 fi
+
+wait # until s2_visualize background processes finished
 
 ###########################
 #

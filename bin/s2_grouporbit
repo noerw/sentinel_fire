@@ -15,16 +15,16 @@ abs_path = os.path.abspath(rel_path)
 
 files = os.listdir(abs_path)
 
-# create a dict with dates as keys and 
+# create a dict with dates as keys and
 # a list of matching filenames as values
 date_dict = {}
-for f in range(0,len(files)):
-    if files[f].endswith('.SAFE'):
+for f in files:
+    if f.endswith('.SAFE') and 'MSIL1C' not in f:
         # get date substring
-        date = files[f][45:53]
+        date = f[45:53]
         if not date in date_dict:
             date_dict[date] = []
-        date_dict[date].append(os.path.join(abs_path, files[f]))
+        date_dict[date].append(os.path.join(abs_path, f))
 
 # sort all files by date
 dates = sorted(date_dict)

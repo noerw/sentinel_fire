@@ -5,7 +5,7 @@ set -o pipefail
 
 SCRIPTDIR=${BASH_SOURCE%/*}
 sen2cor_bin="$SCRIPTDIR/sen2cor/bin/L2A_Process"
-sen2cor_res=60
+sen2cor_res=20
 
 # first and only argument is the path to a .SAFE directory containing a sentinel tile
 safe_input_dir=$1

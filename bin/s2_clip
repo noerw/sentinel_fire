@@ -92,7 +92,6 @@ stitchedpath="${OUTDIR}/${TIFFNAME}_l2a"
 
 function cleanup {
   # cleanup
-  echo "deleting $vrtlist" 1>&2
   xargs rm -f < $vrtlist
   rm -f $vrtlist ${stitchedpath}.vrt ${stitchedpath}_tmp.tif
   rm -f $log
@@ -134,7 +133,7 @@ echo "done\n" >> $log
 echo "start clipping" >> $log
 echo "clipping $stitchedpath.vrt..." 1>&2
 gdalwarp -dstnodata 0 -crop_to_cutline -cutline $AOI ${stitchedpath}_tmp.tif -overwrite $stitchedpath.tif 1>> $log 2>> $log
-echo done >> $log
+echo "done" >> $log
 echo "" >> $log
 
 # output required for pipeline
