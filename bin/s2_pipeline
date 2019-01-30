@@ -109,11 +109,17 @@ mkdir -p $outdir/data
 # using bash pipes and xargs gives us smart parallelism, all without Apache Storm, Spark,
 # Hadoop or whatever! (who needs replayability, just start the pipe again, completed work is cached)
 
+###########################
+#
+# Download & Preprocessing
+#
+###########################
 echo -e "====> pipeline 1/4: download & preprocessing\n"
 # first pipeline:
 # - download two in parallel (API limitation)
 # - filter L1C tiles to apply correction to
 # - apply preprocessing (athmospheric correction with sen2cor) to L1C tiles
+
 $SCRIPTDIR/s2_query --aoi "$aoistring" --startdate "$startdate" --enddate "$enddate" --cloud "$cloud" --processed-dir "$outdir/data" |
   xargs -r -L1 -P2 $SCRIPTDIR/s2_download $outdir/data |
   grep 'MSIL1C' | # only L1C products need to be processed. TODO: also skip for already existing L2A
@@ -121,19 +127,31 @@ $SCRIPTDIR/s2_query --aoi "$aoistring" --startdate "$startdate" --enddate "$endd
 
 # wait for all previous steps to complete, as we need /all/ images for merging, then start second pipeline:
 
-echo -e "\n====> pipeline 2/4: orbit tile stitching\n"
+###########################
+#
+# Orbit tile stitching and clipping
+#
+###########################
+echo -e "\n====> pipeline 2/4: orbit tile stitching and clipping\n"
 # second pipeline:
 # - combine bands of each tile into .vrt files
 # - join/stitch images of the same orbit
 # - clip to AoI
+
 tiffs=`$SCRIPTDIR/s2_grouporbit --input $outdir/data/ |
   xargs -r -L1 -P2 $SCRIPTDIR/s2_clip --aoi "$aoi" --outputdir "$outdir/data" --input`
 
 # wait for completion again, as we need to compare two adjacent images each.
 
+###########################
+#
+# Change detection
+#
+###########################
 echo -e "\n====> pipeline 3/4: change detection\n"
 # calling change detection script(s)
 # add --algorithm flag if it was defined
+
 if [ ! -z $algorithm ]
   then
     $SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data" --process $algorithm
@@ -141,9 +159,15 @@ if [ ! -z $algorithm ]
     $SCRIPTDIR/s2_changedetection --input $tiffs --outputdir "$outdir/data"
 fi
 
+###########################
+#
+# Web Visualization
+#
+###########################
 echo -e "\n====> pipeline 4/4: web visualization\n"
 # create web visualization at last
 # always checks if files with matching suffix exist
+
 if filesexist '*_bais2.tif'; then
   $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_bais2\.tif$" --outfile "viz_bais2.html" &
 fi
@@ -156,6 +180,11 @@ if filesexist '*_l2a.tif'; then
   $SCRIPTDIR/s2_visualize "$outdir/data" "$aoistring" --filepattern ".*_l2a\.tif$" --outfile "viz_l2a.html"
 fi
 
+###########################
+#
+# Cleanup
+#
+###########################
 # clean up intermediate files
 if [ ! -z $cleanup ]; then
   echo -e "\n====> cleanup of intermediate files"
