@@ -88,7 +88,6 @@ function parallelism {
 }
 
 function filesexist {
- # if [ ! -z $(find $outdir/data/ -maxdepth 1 -name $1) ]; then
   if [ ! -z "$(find $outdir/data/ -maxdepth 1 -name $1)" ]; then
     return 0
   else
@@ -122,9 +121,9 @@ echo -e "====> pipeline 1/4: download & preprocessing\n"
 # - apply preprocessing (athmospheric correction with sen2cor) to L1C tiles
 
 $SCRIPTDIR/s2_query --aoi "$aoistring" --startdate "$startdate" --enddate "$enddate" --cloud "$cloud" --processed-dir "$outdir/data" |
-  xargs -r -L1 -P2 $SCRIPTDIR/s2_download $outdir/data |
-  grep 'MSIL1C' | # only L1C products need to be processed. TODO: also skip for already existing L2A
-  xargs -r -L1 -P$sen2cor_instances $SCRIPTDIR/s2_preprocess
+ xargs -r -L1 -P2 $SCRIPTDIR/s2_download $outdir/data |
+ grep 'MSIL1C' | # only L1C products need to be processed. TODO: also skip for already existing L2A
+ xargs -r -L1 -P$sen2cor_instances $SCRIPTDIR/s2_preprocess
 
 # wait for all previous steps to complete, as we need /all/ images for merging, then start second pipeline:
 

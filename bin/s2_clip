@@ -21,7 +21,7 @@ while test $# -gt 0; do
       echo "options:"
       echo "-h, --help                show brief help."
       echo "-a, --aoi                 area of interest as geojson polygon geometry json file. Required."
-      echo "-i, --input               space separated list of paths to input files. Required."
+      echo "-i, --input               space separated list of paths to input SAFE folders. Required."
       echo "-o, --outputdir           path to output directory. Required."
       exit 0
       ;;
@@ -80,9 +80,10 @@ touch $vrtlist
 TILELIST=$INDIR
 # if TILELIST isn't empty
 if [ "$TILELIST" != "" ]
- then l2a_tiles=$TILELIST
+then
+  l2a_tiles=$TILELIST
 else echo "no matching tiles for that date ($INPUTDATE) found" 1>> $log 2>> $log
- exit
+  exit
 fi
 
 # output tiff is named inputfolder_inputdate_l2a.tiff
@@ -92,11 +93,19 @@ stitchedpath="${OUTDIR}/${TIFFNAME}_l2a"
 
 function cleanup {
   # cleanup
-  xargs rm -f < $vrtlist
+  [ -f $vrtlist ] && xargs rm -f < $vrtlist
   rm -f $vrtlist ${stitchedpath}.vrt ${stitchedpath}_tmp.tif
   rm -f $log
 }
 trap cleanup EXIT
+
+function tile_bands {
+  # given a path to a MSIL2A tile, a list of all atomic .jp2 band files is returned.
+  # where bands are available in multiple resolutions, the highest is used.
+  # band order is: 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 8A (note that band 10 is missing!)
+  bandlist=`find $tile -path '*IMG_DATA*.jp2' -type f ! -name *AOT* ! -name *WVP* ! -name *TCP* ! -name *TCI* ! -name *SCL* ! -name *B02_20* ! -name *B03_20* ! -name *B04_20* ! -name *B02_60* ! -name *B03_60* ! -name *B04_60* ! -name *B05_60* ! -name *B06_60* ! -name *B07_60* ! -name *B10_60* ! -name *B11_60* ! -name *B12_60* ! -name *B8A_60*`
+  echo `python2 -c "import sys; a = sys.argv[1:]; a.sort(key = lambda x: x.split('/')[-1]); print ' '.join(a)" $bandlist`
+}
 
 # check if file already exists. If so skip process
 if [ -f "${stitchedpath}.tif" ]; then
@@ -114,13 +123,22 @@ do
 
   # filter for bands that we need
   # bandlist is empty when folder doesn't contain an IMG_DATA directory
-  bandlist=`find $tile -path '*IMG_DATA*.jp2' -type f ! -name *AOT* ! -name *WVP* ! -name *TCP* ! -name *TCI_20* ! -name *TCI_60* ! -name *SCL* ! -name *B02_20* ! -name *B03_20* ! -name *B04_20* ! -name *B02_60* ! -name *B03_60* ! -name *B04_60* ! -name *B05_60* ! -name *B06_60* ! -name *B07_60* ! -name *B09_60* ! -name *B11_60* ! -name *B12_60* ! -name *B8A_60* | sort`
+  bandlist=`tile_bands $tile`
+
+  if [ -z $bandlist ]; then
+    >&2 echo "skipping invalid tile $tile"
+    continue
+  fi
 
   # build vrt for every tile, write name to $vrtlist for clipping function
   gdalbuildvrt -separate -resolution highest -overwrite $outtilename.vrt $bandlist 1>> $log 2>> $log
   echo $outtilename.vrt >> $vrtlist
 done
 echo "done with tiles" >> $log
+
+if [ ! -s $vrtlist ]; then
+  exit
+fi
 
 # Stitching
 echo "start stitching" >> $log
