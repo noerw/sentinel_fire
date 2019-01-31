@@ -48,7 +48,11 @@ if not len(tifs):
 thumbs = []
 for tif in tifs:
     thumb = tif.replace('.tif', '.thumb.tif')
-    cmd = 'gdalwarp -r max -t_srs "EPSG:4326" -ts 1000 0 -overwrite {} {}'.format(tif, thumb)
+    if path.isfile(thumb):
+        continue
+
+    # only packbits compression can be read by geotiff.js in our web visualization!
+    cmd = 'gdalwarp -r max -t_srs "EPSG:4326" -co "compress=packbits" -ts 1000 0 -overwrite {} {}'.format(tif, thumb)
     output = Popen(cmd, stdout=PIPE, shell=True)
     std, stderr = output.communicate()
     if stderr:

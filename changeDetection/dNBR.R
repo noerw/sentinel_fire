@@ -1,14 +1,14 @@
 rm(list=ls())
 
-# ------------------------ Libraries ------------------------ 
+# ------------------------ Libraries ------------------------
 
 library(raster)
 
-# ------------------------ Function definition ------------------------ 
+# ------------------------ Function definition ------------------------
 
 differenceNBR <- function(outpath, beforeImage, afterImage){
 
-# ------------------------ Loading Bands ------------------------ 
+# ------------------------ Loading Bands ------------------------
 #BEFORE#
 before_R20m_file <- beforeImage
 
@@ -23,7 +23,7 @@ Before_SWIR = raster(before_R20m_file,band = 11)
 After_NIR  = raster(after_R20m_file,band = 8)
 After_SWIR = raster(after_R20m_file,band = 11)
 
-# ------------------------ Normalized Burn Ratio ------------------------ 
+# ------------------------ Normalized Burn Ratio ------------------------
 
 Before_NBR <- (Before_NIR - Before_SWIR) / (Before_NIR + Before_SWIR)
 
@@ -33,7 +33,7 @@ After_NBR <- (After_NIR - After_SWIR) / (After_NIR + After_SWIR)
 dNBR <- Before_NBR - After_NBR
 
 #reclassify with the classes from the paper
-outputdNBR <- reclassify(dNBR, c( -Inf  , -0.1, 0   , 
+outputdNBR <- reclassify(dNBR, c( -Inf  , -0.1, 0   ,
                                   -0.1  ,  0.1, 0   ,
                                   0.1  ,  0.27, 1 ,      #Low severety
                                   0.27,   0.66, 2,        #Mid severety

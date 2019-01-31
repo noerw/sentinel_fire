@@ -125,8 +125,8 @@ do
   # bandlist is empty when folder doesn't contain an IMG_DATA directory
   bandlist=`tile_bands $tile`
 
-  if [ -z $bandlist ]; then
-    >&2 echo "skipping invalid tile $tile"
+  if [ -z "$bandlist" ]; then
+    >&2 echo "skipping invalid tile `basename $tile`"
     continue
   fi
 
@@ -137,7 +137,7 @@ done
 echo "done with tiles" >> $log
 
 if [ ! -s $vrtlist ]; then
-  exit
+  exit # if we don't have any valid bands for this orbit
 fi
 
 # Stitching
@@ -150,7 +150,7 @@ echo "done\n" >> $log
 # CLIP image
 echo "start clipping" >> $log
 echo "clipping $stitchedpath.vrt..." 1>&2
-gdalwarp -dstnodata 0 -crop_to_cutline -cutline $AOI ${stitchedpath}_tmp.tif -overwrite $stitchedpath.tif 1>> $log 2>> $log
+gdalwarp -t_srs "EPSG:4326" -dstnodata 0 -crop_to_cutline -cutline $AOI ${stitchedpath}_tmp.tif -overwrite $stitchedpath.tif 1>> $log 2>> $log
 echo "done" >> $log
 echo "" >> $log
 
