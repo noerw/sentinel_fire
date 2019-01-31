@@ -6,10 +6,8 @@ library(raster)
 
 # ------------------------ Function definition ------------------------ 
 
-differenceNBR <- function(outpath, beforeImage, afterImage, threshold=FALSE){
+differenceNBR <- function(outpath, beforeImage, afterImage){
 
-#check if outpath exists und wenn ja dann nicht alles berechnen
-  
 # ------------------------ Loading Bands ------------------------ 
 #BEFORE#
 before_R20m_file <- beforeImage
@@ -19,11 +17,11 @@ after_R20m_file  <- afterImage
 
 #Before Bands
 Before_NIR  = raster(before_R20m_file,band = 8)
-Before_SWIR = raster(before_R20m_file,band = 12)
+Before_SWIR = raster(before_R20m_file,band = 11)
 
 #After Bands
 After_NIR  = raster(after_R20m_file,band = 8)
-After_SWIR = raster(after_R20m_file,band = 12)
+After_SWIR = raster(after_R20m_file,band = 11)
 
 # ------------------------ Normalized Burn Ratio ------------------------ 
 
@@ -31,18 +29,16 @@ Before_NBR <- (Before_NIR - Before_SWIR) / (Before_NIR + Before_SWIR)
 
 After_NBR <- (After_NIR - After_SWIR) / (After_NIR + After_SWIR)
 
+plot(Before_NBR)
 #Compute difference Normalized Burn Ratio from before and after images
 dNBR <- Before_NBR - After_NBR
 
 #reclassify with the classes from the paper
-outputdNBR <- reclassify(dNBR, c( -Inf  , -0.1, NA   , 
-                                  -0.1  ,  0.1, NA   ,
-                                  0.1  ,  0.27, 0 ,         #Low severety
-                                  0.27,   0.66, 0.5,        #Mid severety
-                                  0.66 ,  Inf , 1   ))      #High severety
-if(threshold == TRUE){
-  outputdNBR[outputdNBR < 0.5 ] <- NA
-}
+outputdNBR <- reclassify(dNBR, c( -Inf  , -0.1, 0   , 
+                                  -0.1  ,  0.1, 0   ,
+                                  0.1  ,  0.27, 1 ,      #Low severety
+                                  0.27,   0.66, 2,        #Mid severety
+                                  0.66 ,  Inf , 3   ))      #High severety
 
 # ------------------------ Detect Water ------------------------ #
 
@@ -64,4 +60,4 @@ cat(outpath)
 
 args = commandArgs(trailingOnly=TRUE)
 
-differenceNBR(args[1],args[2],args[3],args[4])
+differenceNBR(args[1],args[2],args[3])
