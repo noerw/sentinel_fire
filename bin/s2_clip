@@ -88,7 +88,7 @@ fi
 
 # output tiff is named inputfolder_inputdate_l2a.tiff
 DATE=$(basename ${l2a_tiles%% *})
-TIFFNAME=${DATE:45:8}
+TIFFNAME=${DATE:11:8}
 stitchedpath="${OUTDIR}/${TIFFNAME}_l2a"
 
 function cleanup {
