@@ -29,7 +29,6 @@ Before_NBR <- (Before_NIR - Before_SWIR) / (Before_NIR + Before_SWIR)
 
 After_NBR <- (After_NIR - After_SWIR) / (After_NIR + After_SWIR)
 
-plot(Before_NBR)
 #Compute difference Normalized Burn Ratio from before and after images
 dNBR <- Before_NBR - After_NBR
 
@@ -41,7 +40,6 @@ outputdNBR <- reclassify(dNBR, c( -Inf  , -0.1, 0   ,
                                   0.66 ,  Inf , 3   ))      #High severety
 
 # ------------------------ Detect Water ------------------------ #
-
 source("waterDetection.R")
 water <- detectWater(beforeImage)
 
@@ -51,7 +49,7 @@ source("deleteWater.R")
 output <- deleteWater(outputdNBR, water)
 
 # ----------------------- Output ------------------------ #
-b <- brick(output)
+#b <- brick(output)
 writeRaster(b,outpath)
 
 cat(outpath)

@@ -20,28 +20,33 @@ Band05  = raster(R20m_file,band = 5)
 Band06  = raster(R20m_file,band = 6)
 Band07  = raster(R20m_file,band = 7)
 Band08  = raster(R20m_file,band = 8)
-Band8A  = raster(R20m_file,band = 12)#10
 Band09  = raster(R20m_file,band = 9)
 Band11  = raster(R20m_file,band = 10)
 Band12  = raster(R20m_file,band = 11)
+Band8A  = raster(R20m_file,band = 12)
 
-a <- (Band06/10)
-b <- (Band07/10)
-c <- (Band8A/10)
+a <- Band06 
+b <- Band07
+c <- Band8A
 
-d <- Band04/1000
+d <- Band04
 
-BAIS2 <- (  1- (sqrt((a*b*c)/d)) * ( (Band12-Band8A) / (sqrt(Band12+Band8A) ) + 1 ) )
+BAIS2P1 <- ( 1 - sqrt( ((a*b)/d)*c))
+           
+BAIS2P2 <- ( ( (Band12-Band8A) / (sqrt(Band12+Band8A) )  ) + 1 ) 
 
+BAIS2 <- BAIS2P1 * BAIS2P2
 #------------------------ Reclassification ------------------------ 
 #find out the breaks
 limits <- summary(BAIS2)
 
+
 #reclassify the result
-BAIS2 <- reclassify(BAIS2, c(      -Inf , limits[2], 3   ,
-                              limits[2] , limits[3], 2 , 
-                              limits[3] , limits[4], 1,
-                              limits[4] ,       Inf, 0  ))
+BAIS2 <- reclassify(BAIS2, c(      -Inf , limits[2], 0  , 
+                              limits[2] , limits[3], 1  ,
+                              limits[3] , limits[4], 2  ,
+                              limits[4] ,       Inf, 3   ))
+
 
 # ------------------------ Detect Water ------------------------ #
 
