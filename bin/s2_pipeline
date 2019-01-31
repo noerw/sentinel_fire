@@ -104,6 +104,7 @@ if [ "$sen2cor_instances" -eq "0" ]; then
 fi
 
 SCRIPTDIR=${BASH_SOURCE%/*}
+outdir=${outdir%/*}
 mkdir -p $outdir/data
 
 # using bash pipes and xargs gives us smart parallelism, all without Apache Storm, Spark,
